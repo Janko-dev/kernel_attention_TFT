@@ -15,13 +15,15 @@
 : ${SEED:=1}
 : ${LR:=1e-3}
 : ${NGPU:=1}
-: ${BATCH_SIZE:=32}
+: ${BATCH_SIZE:=64}
 : ${EPOCHS:=100}
+: ${ATTN_NAME:=sdp}
 
 python -m torch.distributed.run --nproc_per_node=${NGPU} train.py \
         --dataset electricity \
         --data_path /data/processed/electricity_bin \
         --batch_size=${BATCH_SIZE} \
+        --attn_name=${ATTN_NAME} \
         --sample 450000 50000 \
         --lr ${LR} \
         --epochs ${EPOCHS} \

@@ -224,6 +224,11 @@ sudo apt-get update
 sudo apt-get install -y nvidia-container-toolkit
 ```
 
+4. restart docker daemon
+```bash
+sudo systemctl restart docker
+```
+
 ## Quick Start Guide
 
 To train your model using mixed or TF32 precision with Tensor Cores, perform the following steps using the default parameters of the TFT model on any of the benchmark datasets. For the specifics concerning training and inference, refer to the [Advanced](#advanced) section.
@@ -236,12 +241,12 @@ cd kernel_attention_forecasting//TFT
 
 2.  Build the TFT PyTorch NGC container.
 ```bash
-docker build --network=host -t tft .
+sudo docker build --network=host -t tft .
 ```
 
 3.  Start an interactive session in the NGC container to run training/inference.
 ```bash
-docker run -it --rm --ipc=host --network=host --gpus all -v /path/to/your/data:/data/ tft
+sudo docker run -it --rm --ipc=host --network=host --gpus all -v ~/data/storage/data:/data/ tft
 ```
 
 Note: Ensure to mount your dataset using the -v flag to make it available for training inside the NVIDIA Docker container.
@@ -255,6 +260,8 @@ bash scripts/get_data.sh
 These scripts are tuned for DGX1-32G. If you have a different system, use NGPU and BATCH_SIZE variables to adjust the parameters for your system.
 ```bash
 bash scripts/run_electricity.sh
+bash scripts/run_electricity_test1.sh
+bash scripts/run_electricity_grid_search.sh
 bash scripts/run_traffic.sh
 ```
 

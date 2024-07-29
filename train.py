@@ -81,7 +81,7 @@ def main(args):
     train_loader, valid_loader, test_loader = load_dataset(args, config)
 
     attn_module_class = make_attn_module_class(args.attn_name)
-    attn_module = attn_module_class(dropout_rate=args.attn_dropout)
+    attn_module = attn_module_class(dropout_rate=config.attn_dropout)
     model = TemporalFusionTransformer(config, attn_module).cuda()
     if args.ema_decay:
         model_ema = ModelEma(model, decay=args.ema_decay)

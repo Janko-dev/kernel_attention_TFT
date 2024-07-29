@@ -89,13 +89,13 @@ def main(args):
     for attn_hparams in attn_hparam_grid:
 
 
-        attn_hparams['dropout_rate'] = args.attn_dropout
+        attn_hparams['dropout_rate'] = config.attn_dropout
         attn_module = attn_module_class(**attn_hparams)
         model = TemporalFusionTransformer(config, attn_module).cuda()
         if args.ema_decay:
             model_ema = ModelEma(model, decay=args.ema_decay)
 
-        dllogger.log(step='HPARAMS', data={**vars(args), **vars(config), **attn_hparams}, verbosity=1)
+        dllogger.log(step='HPARAMS', data={**vars(args), **vars(config)}, verbosity=1)
 
         # Run dummy iteration to initialize lazy modules
         dummy_batch = next(iter(train_loader))
@@ -116,7 +116,7 @@ def main(args):
         validate.early_stop_c = 0
 
         for epoch in range(args.epochs):
-            dllogger.log(step=global_step, data={'attn_name': args.attn_name, 'epoch': epoch, **attn_hparams}, verbosity=1)
+            dllogger.log(step=global_step, data={'epoch': epoch}, verbosity=1)
 
             model.train()
             for local_step, batch in enumerate(train_loader):
@@ -175,7 +175,8 @@ def main(args):
 
     ### TEST PHASE ###
     state_dict = torch.load(os.path.join(args.results, 'best_model_checkpoint.pt'), map_location='cpu')
-    state_dict['attn_hparams']['dropout_rate'] = args.attn_dropout
+    state_dict['attn_hparams']['dropout_rate'] = config.attn_dropout
+    print(state_dict['attn_hparams'])
     attn_module = attn_module_class(**state_dict['attn_hparams'])
     model = TemporalFusionTransformer(config, attn_module).cuda()
     if isinstance(model, DDP):
@@ -204,6 +205,16 @@ def main(args):
     quantiles = {'test_p10': quantiles[0].item(), 'test_p50': quantiles[1].item(), 'test_p90': quantiles[2].item(), 'sum':sum(quantiles).item()}
     finish_log = {**quantiles, 'average_ips':perf_meter.avg, 'convergence_step':validate.conv_step}
     dllogger.log(step=(), data=finish_log, verbosity=1)
+    
+    finish_log['exp_name'] = args.dataset
+    finish_log['attn_name'] = args.attn_name
+    finish_log['attn_hparams'] = state_dict['attn_hparams']
+    finish_log['config'] = state_dict['config']
+    
+    results_path = os.path.join(args.results, f'results_{args.dataset}_{args.attn_name}.json')
+    with open(results_path, 'w') as f:
+        json.dump(finish_log, f)
+    
 
 def validate(args, config, model, criterion, dataloader, global_step):
     if not hasattr(validate, 'best_valid_loss'):

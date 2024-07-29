@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from typing import Optional
 
 ### helper functions
 def magnitude_term(query: torch.Tensor, keys: torch.Tensor, d: int, p_norm: int):
@@ -18,7 +19,7 @@ class DotProductAttention(nn.Module):
     def __init__(self, dropout_rate: float = 0.1):
         super().__init__()
         self.dropout = nn.Dropout(dropout_rate)
-        self.attention_weight = None
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads)
@@ -44,7 +45,7 @@ class LinearKernelAttention(nn.Module):
         super().__init__()
 
         self.dropout = nn.Dropout(dropout_rate)
-        self.attention_weight = None
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads)
@@ -78,11 +79,12 @@ class ExpKernelAttention(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
         self.p_norm_sim = p_norm_sim
         self.p_norm_mag = p_norm_mag
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm_mag)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.include_magnitude = include_magnitude
+        #if include_magnitude:
+        #    self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm_mag)
+        #else:
+        #    self.magnitude = lambda x, q, k, d: x
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -99,7 +101,7 @@ class ExpKernelAttention(nn.Module):
         preattn = -torch.norm(diff, dim=-3, p=self.p_norm_sim)**self.p_norm_sim / (2 * d**0.5)
 
         # if magnitude is included, it is added to the pre-attention weight
-        preattn = self.magnitude(preattn, query, keys, d)
+        if self.include_magnitude: preattn = preattn + magnitude_term(query, keys, d, self.p_norm_mag) 
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -121,17 +123,14 @@ params:
 """
 class PeriodicKernelAttention(nn.Module):
 
-    TWO_APPROX = 2 + 1e-5
     def __init__(self, dropout_rate: float = 0.1, period: float = 1, p_norm: int = 2, include_magnitude: bool = True):
         super().__init__()
         self.dropout = nn.Dropout(dropout_rate)
         self.period = period
         self.p_norm = p_norm
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.TWO_APPROX = 2 + 1e-5
+        self.include_magnitude = include_magnitude
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -145,8 +144,9 @@ class PeriodicKernelAttention(nn.Module):
         postsine = -2 * torch.sin(presine)**2 / d**0.5
 
         # if magnitude is included, it is added to the post sine wave
-        preattn = self.magnitude(postsine, query, keys, d)
-
+        #preattn = self.magnitude(postsine, query, keys, d)
+	preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
+	
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
 
@@ -166,17 +166,14 @@ params:
 """
 class LocallyPeriodicKernelAttention(nn.Module):
 
-    TWO_APPROX = 2 + 1e-5
     def __init__(self, dropout_rate: float = 0.1, period: float = 1, p_norm: int = 2, include_magnitude: bool = True):
         super().__init__()
         self.dropout = nn.Dropout(dropout_rate)
         self.period = period
         self.p_norm = p_norm
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.TWO_APPROX = 2 + 1e-5
+        self.include_magnitude = include_magnitude
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -193,8 +190,10 @@ class LocallyPeriodicKernelAttention(nn.Module):
         SE_norm = query_norm @ keys_norm.transpose(-2, -1)
 
         # if magnitude is included, it is added to the post sine wave
-        preattn = self.magnitude(postsine, query, keys, d) + SE_norm
-
+        #preattn = self.magnitude(postsine, query, keys, d) + SE_norm
+	preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
+	preattn += SE_norm
+	
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
 
@@ -218,11 +217,8 @@ class RationalQuadraticKernelAttention(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
         self.alpha = alpha
         self.p_norm = p_norm
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.include_magnitude = include_magnitude
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -237,7 +233,8 @@ class RationalQuadraticKernelAttention(nn.Module):
         RQ_term = RQ_term**-self.alpha
 
         # if magnitude is included, it is added to the log RQ_term
-        preattn = self.magnitude(torch.log(RQ_term + 1e-5), query, keys, d)
+        preattn = torch.log(RQ_term + 1e-5)
+        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -265,11 +262,8 @@ class ImplicitKernelAttention(nn.Module):
         self.R_features = R_features
         self.p_norm = p_norm
         self.W = nn.LazyLinear(out_features=R_features)
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.include_magnitude = include_magnitude
+        self.attention_weight = torch.Tensor(0)
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -290,7 +284,8 @@ class ImplicitKernelAttention(nn.Module):
         energy = torch.mul(energy, energy)
 
         # if magnitude is included, it is added to the log energy
-        preattn = self.magnitude(torch.log(energy + 1e-5), query, keys, d)
+        preattn = torch.log(energy + 1e-5)
+        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -312,18 +307,15 @@ params:
 """
 class ChangePointKernelAttention(nn.Module):
 
-    TWO_APPROX = 2 + 1e-5
     def __init__(self, dropout_rate: float = 0.1, period: float = 1, p_norm_sim: int = 2, p_norm_mag: int = 2, include_magnitude: bool = True):
         super().__init__()
         self.dropout = nn.Dropout(dropout_rate)
         self.period = period
         self.p_norm_sim = p_norm_sim
         self.p_norm_mag = p_norm_mag
-        if include_magnitude:
-            self.magnitude = lambda x, q, k, d: x + magnitude_term(q, k, d, self.p_norm_mag)
-        else:
-            self.magnitude = lambda x, q, k, d: x
-        self.attention_weight = None
+        self.include_magnitude = include_magnitude
+        self.attention_weight = torch.Tensor(0)
+        self.TWO_APPROX = 2 + 1e-5
 
     def forward(self, query: torch.Tensor, keys: torch.Tensor, vals: torch.Tensor, mask: torch.Tensor = None):
         # query/keys: (batch_size, n_heads, seq_len, n_hidden/n_heads = d)
@@ -353,7 +345,8 @@ class ChangePointKernelAttention(nn.Module):
                   (1-sigm_query) @ (1-sigm_keys) * torch.exp(periodic_term)
 
         # if magnitude is included, it is added to the log energy
-        preattn = self.magnitude(preattn, query, keys, d)
+        #preattn = self.magnitude(preattn, query, keys, d)
+        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm_mag)        
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, 0.0)
