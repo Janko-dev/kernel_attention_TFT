@@ -209,7 +209,7 @@ def main(args):
     finish_log['exp_name'] = args.dataset
     finish_log['attn_name'] = args.attn_name
     finish_log['attn_hparams'] = state_dict['attn_hparams']
-    finish_log['config'] = state_dict['config']
+    finish_log['config'] = state_dict['config'].__dict__
     
     results_path = os.path.join(args.results, f'results_{args.dataset}_{args.attn_name}.json')
     with open(results_path, 'w') as f:
