@@ -31,5 +31,5 @@ python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search.py \
         --use_amp \
         --clip_grad 0.01 \
         --early_stopping 5 \
-        --results /results/TFT_electricity_gridsearch_${ATTN_NAME}_bs${BATCH_SIZE}_lr${LR}_seed${SEED}
+        --results /results/TFT_electricity_gridsearch_${ATTN_NAME}_bs${BATCH_SIZE}_lr${LR}_seed${SEED} \
         --log_file grid_search_electricity_${ATTN_NAME}

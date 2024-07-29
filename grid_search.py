@@ -89,6 +89,8 @@ def main(args):
     for attn_hparams in attn_hparam_grid:
 
         attn_hparams['dropout_rate'] = config.attn_dropout
+        if args.attn_name == 'imp':
+            attn_hparams['input_size'] = config.hidden_size // config.n_head
         attn_module = attn_module_class(**attn_hparams)
         model = TemporalFusionTransformer(config, attn_module).cuda()
         if args.ema_decay:

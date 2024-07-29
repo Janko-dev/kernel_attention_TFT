@@ -256,12 +256,12 @@ params:
 """
 class ImplicitKernelAttention(nn.Module):
 
-    def __init__(self, dropout_rate: float = 0.1, R_features: int = 64, p_norm: int = 2, include_magnitude: bool = True):
+    def __init__(self, input_size: int, dropout_rate: float = 0.1, R_features: int = 64, p_norm: int = 2, include_magnitude: bool = True):
         super().__init__()
         self.dropout = nn.Dropout(dropout_rate)
         self.R_features = R_features
         self.p_norm = p_norm
-        self.W = nn.LazyLinear(out_features=R_features)
+        self.W = nn.Linear(in_features=input_size, out_features=R_features)
         self.include_magnitude = include_magnitude
         self.attention_weight = torch.Tensor(0)
 
