@@ -23,7 +23,7 @@ from torch.cuda import amp
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from modeling import TemporalFusionTransformer
-from configuration import ElectricityConfig
+from configuration import ElectricityConfig, make_attn_module_class
 from data_utils import TFTDataset
 from utils import PerformanceMeter
 from criterions import qrisk
@@ -195,7 +195,11 @@ def main(args):
     # Set up model
     state_dict = torch.load(args.checkpoint)
     config = state_dict['config']
-    model = TemporalFusionTransformer(config).cuda()
+    attn_hparams = state_dict['attn_hparams']
+    attn_module_class = make_attn_module_class(state_dict['args']['attn_name'])
+
+    attn_module = attn_module_class(**attn_hparams)
+    model = TemporalFusionTransformer(config, attn_module).cuda()
     model.load_state_dict(state_dict['model'])
     model.eval()
     model.cuda()

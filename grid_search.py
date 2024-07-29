@@ -88,7 +88,6 @@ def main(args):
 
     for attn_hparams in attn_hparam_grid:
 
-
         attn_hparams['dropout_rate'] = config.attn_dropout
         attn_module = attn_module_class(**attn_hparams)
         model = TemporalFusionTransformer(config, attn_module).cuda()
@@ -161,7 +160,7 @@ def main(args):
                 dllogger.log(step=global_step, data=log_dict, verbosity=1)
                 global_step += 1
 
-            validate(args, config, model_ema if args.ema_decay else model, criterion, valid_loader, global_step)
+            validate(args, config, model_ema if args.ema_decay else model, criterion, valid_loader, global_step, attn_hparams)
 
             if validate.early_stop_c >= args.early_stopping:
                 print_once('Early stopping')
@@ -175,7 +174,8 @@ def main(args):
 
     ### TEST PHASE ###
     state_dict = torch.load(os.path.join(args.results, 'best_model_checkpoint.pt'), map_location='cpu')
-    state_dict['attn_hparams']['dropout_rate'] = config.attn_dropout
+    print(state_dict['args'])
+    print(state_dict['config'])
     print(state_dict['attn_hparams'])
     attn_module = attn_module_class(**state_dict['attn_hparams'])
     model = TemporalFusionTransformer(config, attn_module).cuda()
@@ -216,7 +216,7 @@ def main(args):
         json.dump(finish_log, f)
     
 
-def validate(args, config, model, criterion, dataloader, global_step):
+def validate(args, config, model, criterion, dataloader, global_step, attn_hparams):
     if not hasattr(validate, 'best_valid_loss'):
         validate.best_valid_loss = float('inf')
     if not hasattr(validate, 'early_stop_c'):
@@ -253,7 +253,7 @@ def validate(args, config, model, criterion, dataloader, global_step):
         validate.conv_step = global_step
         if not dist.is_initialized() or dist.get_rank() == 0:
             state_dict = model.module.state_dict() if isinstance(model, (DDP, ModelEma)) else model.state_dict()
-            ckpt = {'args':args, 'config':config, 'model':state_dict}
+            ckpt = {'args':args, 'config':config, 'model':state_dict, 'attn_hparams': attn_hparams}
             torch.save(ckpt, os.path.join(args.results, 'checkpoint.pt'))
         if args.distributed_world_size > 1:
             dist.barrier()

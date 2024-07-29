@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from typing import Optional
 
 ### helper functions
 def magnitude_term(query: torch.Tensor, keys: torch.Tensor, d: int, p_norm: int):
@@ -9,7 +8,6 @@ def magnitude_term(query: torch.Tensor, keys: torch.Tensor, d: int, p_norm: int)
            torch.pow(torch.norm(input=keys, dim=-1, keepdim=True, p=p_norm), p_norm).transpose(-2, -1)
     norm = norm / (2 * d ** 0.5)
     return norm
-
 
 """
 Standard Scaled Dot product attention mechanism
@@ -101,7 +99,8 @@ class ExpKernelAttention(nn.Module):
         preattn = -torch.norm(diff, dim=-3, p=self.p_norm_sim)**self.p_norm_sim / (2 * d**0.5)
 
         # if magnitude is included, it is added to the pre-attention weight
-        if self.include_magnitude: preattn = preattn + magnitude_term(query, keys, d, self.p_norm_mag) 
+        if self.include_magnitude:
+            preattn = preattn + magnitude_term(query, keys, d, self.p_norm_mag)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -145,7 +144,7 @@ class PeriodicKernelAttention(nn.Module):
 
         # if magnitude is included, it is added to the post sine wave
         #preattn = self.magnitude(postsine, query, keys, d)
-	preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
+        preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
 	
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -191,8 +190,8 @@ class LocallyPeriodicKernelAttention(nn.Module):
 
         # if magnitude is included, it is added to the post sine wave
         #preattn = self.magnitude(postsine, query, keys, d) + SE_norm
-	preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
-	preattn += SE_norm
+        preattn = postsine + magnitude_term(query, keys, d, self.p_norm) if self.include_magnitude else postsine
+        preattn += SE_norm
 	
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -234,7 +233,8 @@ class RationalQuadraticKernelAttention(nn.Module):
 
         # if magnitude is included, it is added to the log RQ_term
         preattn = torch.log(RQ_term + 1e-5)
-        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm)
+        if self.include_magnitude:
+            preattn += magnitude_term(query, keys, d, self.p_norm)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -285,7 +285,8 @@ class ImplicitKernelAttention(nn.Module):
 
         # if magnitude is included, it is added to the log energy
         preattn = torch.log(energy + 1e-5)
-        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm)
+        if self.include_magnitude:
+            preattn += magnitude_term(query, keys, d, self.p_norm)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, float('-inf'))
@@ -346,7 +347,8 @@ class ChangePointKernelAttention(nn.Module):
 
         # if magnitude is included, it is added to the log energy
         #preattn = self.magnitude(preattn, query, keys, d)
-        if self.include_magnitude: preattn += magnitude_term(query, keys, d, self.p_norm_mag)        
+        if self.include_magnitude:
+            preattn += magnitude_term(query, keys, d, self.p_norm_mag)
 
         if mask is not None:
             preattn = preattn.masked_fill(mask == 0, 0.0)

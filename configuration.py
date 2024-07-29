@@ -17,7 +17,7 @@ import datetime
 
 import attention as ATTN
 
-class ElectricityConfig():
+class ElectricityConfig:
     def __init__(self):
 
         self.features = [
@@ -71,7 +71,7 @@ class ElectricityConfig():
                                       ])
 
 
-class TrafficConfig():
+class TrafficConfig:
     def __init__(self):
 
         self.features = [
@@ -124,6 +124,62 @@ class TrafficConfig():
                                       len(self.temporal_observed_categorical_inp_lens),
                                       ])
 
+
+class VolatilityConfig:
+    def __init__(self):
+
+        self.features = [
+                         FeatureSpec('Symbol', InputTypes.ID, DataTypes.CATEGORICAL),
+                         FeatureSpec('date', InputTypes.TIME, DataTypes.DATE),
+                         FeatureSpec('log_vol', InputTypes.TARGET, DataTypes.CONTINUOUS),
+                         FeatureSpec('open_to_close', InputTypes.OBSERVED, DataTypes.CONTINUOUS),
+                         FeatureSpec('days_from_start', InputTypes.KNOWN, DataTypes.CONTINUOUS),
+                         FeatureSpec('day_of_week', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                         FeatureSpec('day_of_month', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                         FeatureSpec('week_of_year', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                         FeatureSpec('month', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                         FeatureSpec('Region', InputTypes.STATIC, DataTypes.CATEGORICAL)
+                        ]
+        # Dataset split boundaries
+        self.time_ids = 'year' # This column contains time indices across which we split the data
+        self.train_range = (2000, 2016)
+        self.valid_range = (2016, 2018)
+        self.test_range = (2018, float('inf'))
+        self.dataset_stride = 1 #how many timesteps between examples
+        self.scale_per_id = True
+        self.missing_id_strategy = None
+        self.missing_cat_data_strategy='encode_all'
+
+        # Feature sizes
+        self.static_categorical_inp_lens = [4]
+        self.temporal_known_categorical_inp_lens = []
+        self.temporal_observed_categorical_inp_lens = []
+        self.quantiles = [0.1, 0.5, 0.9]
+
+        self.example_length = 8 * 24
+        self.encoder_length = 7 * 24
+
+        self.n_head = 4
+        self.hidden_size = 128
+        self.dropout = 0.3
+        self.attn_dropout = 0.0
+
+        #### Derived variables ####
+        self.temporal_known_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.KNOWN and x.feature_embed_type == DataTypes.CONTINUOUS])
+        self.temporal_observed_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.OBSERVED and x.feature_embed_type == DataTypes.CONTINUOUS])
+        self.temporal_target_size = len([x for x in self.features if x.feature_type == InputTypes.TARGET])
+        self.static_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.STATIC and x.feature_embed_type == DataTypes.CONTINUOUS])
+
+        self.num_static_vars = self.static_continuous_inp_size + len(self.static_categorical_inp_lens)
+        self.num_future_vars = self.temporal_known_continuous_inp_size + len(self.temporal_known_categorical_inp_lens)
+        self.num_historic_vars = sum([self.num_future_vars,
+                                      self.temporal_observed_continuous_inp_size,
+                                      self.temporal_target_size,
+                                      len(self.temporal_observed_categorical_inp_lens),
+                                      ])
 
 def make_attn_module_class(attn_name):
     """Gets an attention module class for arbitrary experiment.
