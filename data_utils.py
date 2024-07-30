@@ -359,9 +359,9 @@ def preprocess(src_path, dst_path, config):
     # Length filter the data (all timeseries shorter than example len will be dropped)
     #for df in [train, valid, test]:
     #    df.groupby(id_col).filter(lambda x: len(x) >= config.example_length)
-    train = pd.concat([x[1] for x in train.groupby(id_col) if len(x[1]) >= config.example_length])
-    valid = pd.concat([x[1] for x in valid.groupby(id_col) if len(x[1]) >= config.example_length])
-    test  = pd.concat([x[1] for x in test.groupby(id_col)  if len(x[1]) >= config.example_length])
+    train = pd.concat([x[1] for x in train.groupby(id_col)]) # if len(x[1]) >= config.example_length])
+    valid = pd.concat([x[1] for x in valid.groupby(id_col)]) # if len(x[1]) >= config.example_length])
+    test  = pd.concat([x[1] for x in test.groupby(id_col) ]) # if len(x[1]) >= config.example_length])
 
     train, valid, test, real_scalers, tgt_scalers = normalize_reals(train, valid, test, config, id_col)
 

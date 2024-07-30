@@ -331,4 +331,5 @@ def get_attention_hparam_grid(attn_name):
 
 CONFIGS = {'electricity':  ElectricityConfig,
            'traffic':      TrafficConfig,
+           'volatility':   VolatilityConfig,
            }
