@@ -33,9 +33,14 @@ do
         unzip ${ZIP_FNAME} -d ${DS_PATH}
 
         python -c "from data_utils import standardize_${DS} as standardize; standardize(\"${DS_PATH}\")"
+    fi
+
+    PROCESSED_PATH=${${DATAPATH}/processed/${DS}_bin}
+    if [ ! -d ${PROCESSED_PATH} ]
+    then
         python -c "from data_utils import preprocess; \
                      from configuration import ${DS^}Config as Config; \
-                     preprocess(\"${DS_PATH}/standarized.csv\", \"${DATAPATH}/processed/${DS}_bin\", Config())"
+                     preprocess(\"${DS_PATH}/standardized.csv\", \"${PROCESSED_PATH}\", Config())"
     fi
 done
 
