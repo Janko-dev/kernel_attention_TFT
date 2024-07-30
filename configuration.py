@@ -181,6 +181,77 @@ class VolatilityConfig:
                                       len(self.temporal_observed_categorical_inp_lens),
                                       ])
 
+class FavoritaConfig:
+    def __init__(self):
+
+        self.features = [
+                        FeatureSpec('traj_id', InputTypes.ID, DataTypes.CATEGORICAL),
+                        FeatureSpec('date', InputTypes.TIME, DataTypes.DATE),
+                        FeatureSpec('log_sales', InputTypes.TARGET, DataTypes.CONTINUOUS),
+                        FeatureSpec('onpromotion', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                        FeatureSpec('transactions', InputTypes.OBSERVED, DataTypes.CONTINUOUS),
+                        FeatureSpec('oil', InputTypes.OBSERVED, DataTypes.CONTINUOUS),
+                        FeatureSpec('day_of_week', InputTypes.KNOWN, DataTypes.CONTINUOUS),
+                        FeatureSpec('day_of_month', InputTypes.KNOWN, DataTypes.CONTINUOUS),
+                        FeatureSpec('month', InputTypes.KNOWN, DataTypes.CONTINUOUS),
+                        FeatureSpec('national_hol', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                        FeatureSpec('regional_hol', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                        FeatureSpec('local_hol', InputTypes.KNOWN, DataTypes.CATEGORICAL),
+                        FeatureSpec('open', InputTypes.KNOWN, DataTypes.CONTINUOUS),
+                        FeatureSpec('item_nbr', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('store_nbr', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('city', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('state', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('type', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('cluster', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('family', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('class', InputTypes.STATIC, DataTypes.CATEGORICAL),
+                        FeatureSpec('perishable', InputTypes.STATIC, DataTypes.CATEGORICAL)
+                        ]
+        # Dataset split boundaries
+        self.time_ids = 'date' # This column contains time indices across which we split the data
+        self.train_range = (datetime.datetime(2015, 1, 1),
+                            datetime.datetime(2015, 12, 1))
+        self.valid_range = (datetime.datetime(2015, 12, 1),
+                            datetime.datetime(2015, 12, 31))
+        self.test_range = (datetime.datetime(2015, 12, 31),
+                           datetime.datetime(2016, 1, 31))
+        self.dataset_stride = 1 #how many timesteps between examples
+        self.scale_per_id = True
+        self.missing_id_strategy = None
+        self.missing_cat_data_strategy='encode_all'
+
+        # Feature sizes
+        self.static_categorical_inp_lens = [6, 25, 220, 2, 2, 7, 55, 4, 10]
+        self.temporal_known_categorical_inp_lens = [9, 6, 5, 2]
+        self.temporal_observed_categorical_inp_lens = []
+        self.quantiles = [0.1, 0.5, 0.9]
+
+        self.example_length = 120
+        self.encoder_length = 90
+
+        self.n_head = 4
+        self.hidden_size = 240
+        self.dropout = 0.1
+        self.attn_dropout = 0.1
+
+        #### Derived variables ####
+        self.temporal_known_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.KNOWN and x.feature_embed_type == DataTypes.CONTINUOUS])
+        self.temporal_observed_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.OBSERVED and x.feature_embed_type == DataTypes.CONTINUOUS])
+        self.temporal_target_size = len([x for x in self.features if x.feature_type == InputTypes.TARGET])
+        self.static_continuous_inp_size = len([x for x in self.features
+            if x.feature_type == InputTypes.STATIC and x.feature_embed_type == DataTypes.CONTINUOUS])
+
+        self.num_static_vars = self.static_continuous_inp_size + len(self.static_categorical_inp_lens)
+        self.num_future_vars = self.temporal_known_continuous_inp_size + len(self.temporal_known_categorical_inp_lens)
+        self.num_historic_vars = sum([self.num_future_vars,
+                                      self.temporal_observed_continuous_inp_size,
+                                      self.temporal_target_size,
+                                      len(self.temporal_observed_categorical_inp_lens),
+                                      ])
+
 def make_attn_module_class(attn_name):
     """Gets an attention module class for arbitrary experiment.
 

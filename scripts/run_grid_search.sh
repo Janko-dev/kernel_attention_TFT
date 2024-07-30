@@ -15,7 +15,7 @@
 : ${SEED:=1}
 : ${LR:=1e-3}
 : ${NGPU:=1}
-: ${BATCH_SIZE:=64}
+: ${BATCH_SIZE:=512}
 : ${EPOCHS:=2}
 : ${ATTN_NAME:=sdp}
 : ${MAX_GRAD_NORM:=0.01}
