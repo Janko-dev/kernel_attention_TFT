@@ -235,8 +235,7 @@ To train your model using mixed or TF32 precision with Tensor Cores, perform the
 
 1. Clone the repository.
 ```bash
-git clone https://github.com/NVIDIA/DeepLearningExamples
-cd kernel_attention_forecasting//TFT
+cd kernel_attention_forecasting
 ```
 
 2.  Build the TFT PyTorch NGC container.
@@ -259,10 +258,12 @@ bash scripts/get_data.sh
 5. Start training. Choose one of the scripts provided in the `scripts/` directory. Results are stored in the `/results` directory.
 These scripts are tuned for DGX1-32G. If you have a different system, use NGPU and BATCH_SIZE variables to adjust the parameters for your system.
 ```bash
-bash scripts/run_electricity.sh
-bash scripts/run_electricity_test1.sh
-bash scripts/run_electricity_grid_search.sh
-bash scripts/run_traffic.sh
+bash scripts/run_grid_search_electricity.sh
+```
+
+inference
+```bash
+bash scripts/run_inference.sh
 ```
 
 6. Start validation/evaluation. The metric we use for evaluation is q-risk. We can compare it per-quantile in the Pareto sense or jointly as one number indicating accuracy.

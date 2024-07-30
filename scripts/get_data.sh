@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DATAPATH='/data'
+DATAPATH='/storage/data'
 
 declare -A URLS=( ['electricity']='https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip'
                   ['traffic']='https://archive.ics.uci.edu/ml/machine-learning-databases/00204/PEMS-SF.zip'
@@ -31,11 +31,12 @@ do
     then
         wget "${URLS[${DS}]}" -O ${ZIP_FNAME}
         unzip ${ZIP_FNAME} -d ${DS_PATH}
+
+        python -c "from data_utils import standardize_${DS} as standardize; standardize(\"${DS_PATH}\")"
+        python -c "from data_utils import preprocess; \
+                     from configuration import ${DS^}Config as Config; \
+                     preprocess(\"${DS_PATH}/standarized.csv\", \"${DATAPATH}/processed/${DS}_bin\", Config())"
     fi
-	python -c "from data_utils import standarize_${DS} as standarize; standarize(\"${DS_PATH}\")"
-	python -c "from data_utils import preprocess; \
-               from configuration import ${DS^}Config as Config; \
-               preprocess(\"${DS_PATH}/standarized.csv\", \"${DATAPATH}/processed/${DS}_bin\", Config())" 
 done
 
 

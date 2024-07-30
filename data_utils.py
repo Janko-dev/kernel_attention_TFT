@@ -448,7 +448,7 @@ def load_dataset(args, config, collate_fn=default_collate):
 
     return train_loader, valid_loader, test_loader
 
-def standarize_electricity(path):
+def standardize_electricity(path):
     """Code taken from https://github.com/google-research/google-research/blob/master/tft/script_download_data.py"""
     df = pd.read_csv(os.path.join(path, 'LD2011_2014.txt'), index_col=0, sep=';', decimal=',')
     df.index = pd.to_datetime(df.index)
@@ -495,7 +495,7 @@ def standarize_electricity(path):
     output.to_csv(os.path.join(path, 'standarized.csv'))
 
 
-def standarize_traffic(path):
+def standardize_traffic(path):
     def process_list(s, variable_type=int, delimiter=None):
         """Parses a line in the PEMS format to a list."""
         if delimiter is None:
