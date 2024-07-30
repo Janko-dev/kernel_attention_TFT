@@ -16,20 +16,22 @@
 : ${LR:=1e-3}
 : ${NGPU:=1}
 : ${BATCH_SIZE:=64}
-: ${EPOCHS:=100}
+: ${EPOCHS:=2}
 : ${ATTN_NAME:=sdp}
+: ${MAX_GRAD_NORM:=0.01}
+: ${PATIENCE:=5}
+: ${EXP_NAME:=volatility}
 
 python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search.py \
-        --dataset electricity \
-        --data_path /data/processed/electricity_bin \
-        --attn_name=${ATTN_NAME} \
-        --batch_size=${BATCH_SIZE} \
-        --sample 450000 50000 \
-        --lr ${LR} \
-        --epochs ${EPOCHS} \
-        --seed ${SEED} \
-        --use_amp \
-        --clip_grad 0.01 \
-        --early_stopping 5 \
-        --results /results/TFT_electricity_gridsearch_${ATTN_NAME}_bs${BATCH_SIZE}_lr${LR}_seed${SEED} \
-        --log_file grid_search_electricity_${ATTN_NAME}
+      --dataset ${EXP_NAME} \
+      --data_path /storage/data/processed/${EXP_NAME}_bin \
+      --attn_name=${ATTN_NAME} \
+      --batch_size=${BATCH_SIZE} \
+      --sample 450000 50000 \
+      --lr ${LR} \
+      --epochs ${EPOCHS} \
+      --seed ${SEED} \
+      --use_amp \
+      --clip_grad ${MAX_GRAD_NORM} \
+      --early_stopping ${PATIENCE} \
+      --results /storage/results/test_gridsearch_${EXP_NAME}_${ATTN_NAME}

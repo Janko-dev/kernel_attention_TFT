@@ -492,7 +492,7 @@ def standardize_electricity(path):
     output['categorical_day_of_week'] = output['day_of_week'].copy()
     output['categorical_hour'] = output['hour'].copy()
   
-    output.to_csv(os.path.join(path, 'standarized.csv'))
+    output.to_csv(os.path.join(path, 'standardized.csv'))
 
 
 def standardize_traffic(path):
@@ -618,7 +618,7 @@ def standardize_traffic(path):
     flat_df['categorical_day_of_week'] = flat_df['day_of_week'].copy()
     flat_df['categorical_time_on_day'] = flat_df['time_on_day'].copy()
   
-    flat_df.to_csv(os.path.join(path, 'standarized.csv'))
+    flat_df.to_csv(os.path.join(path, 'standardized.csv'))
 
 # Dataset specific download routines.
 def standardize_volatility(path):
@@ -696,4 +696,4 @@ def standardize_volatility(path):
 
   df = pd.concat(output_df_list, axis=0)
 
-  df.to_csv(os.path.join(path, 'standarized.csv'))
+  df.to_csv(os.path.join(path, 'standardized.csv'))

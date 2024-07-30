@@ -35,7 +35,7 @@ do
         python -c "from data_utils import standardize_${DS} as standardize; standardize(\"${DS_PATH}\")"
     fi
 
-    PROCESSED_PATH=${${DATAPATH}/processed/${DS}_bin}
+    PROCESSED_PATH=${DATAPATH}/processed/${DS}_bin
     if [ ! -d ${PROCESSED_PATH} ]
     then
         python -c "from data_utils import preprocess; \
