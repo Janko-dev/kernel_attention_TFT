@@ -310,7 +310,7 @@ class StaticCovariateEncoder(nn.Module):
         self.vsn = VariableSelectionNetwork(config, config.num_static_vars)
         self.context_grns = nn.ModuleList([GRN(config.hidden_size, config.hidden_size, dropout=config.dropout) for _ in range(4)])
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         variable_ctx, sparse_weights = self.vsn(x)
 
         # Context vectors:
@@ -320,7 +320,7 @@ class StaticCovariateEncoder(nn.Module):
         # state_h context
         cs, ce, ch, cc = [m(variable_ctx) for m in self.context_grns]
 
-        return cs, ce, ch, cc
+        return cs, ce, ch, cc, sparse_weights
 
 
 class InterpretableMultiHeadAttention(nn.Module):
@@ -435,9 +435,9 @@ class TFTBack(nn.Module):
         self.quantile_proj = nn.Linear(config.hidden_size, len(config.quantiles))
         
     def forward(self, historical_inputs, cs, ch, cc, ce, future_inputs):
-        historical_features, _ = self.history_vsn(historical_inputs, cs)
+        historical_features, historical_vsn_weights = self.history_vsn(historical_inputs, cs)
         history, state = self.history_encoder(historical_features, (ch, cc))
-        future_features, _ = self.future_vsn(future_inputs, cs)
+        future_features, future_vsn_weights = self.future_vsn(future_inputs, cs)
         future, _ = self.future_encoder(future_features, state)
         torch.cuda.synchronize()
 
@@ -452,7 +452,7 @@ class TFTBack(nn.Module):
         enriched = self.enrichment_grn(temporal_features, c=ce)
 
         # Temporal self attention
-        x, _ = self.attention(enriched)
+        x, attn_w = self.attention(enriched)
 
         # Don't compute hictorical quantiles
         x = x[:, self.encoder_length:, :]
@@ -473,7 +473,7 @@ class TFTBack(nn.Module):
 
         out = self.quantile_proj(x)
 
-        return out
+        return out, attn_w, historical_vsn_weights, future_vsn_weights
 
 
 class TemporalFusionTransformer(nn.Module):
@@ -490,6 +490,13 @@ class TemporalFusionTransformer(nn.Module):
 
         self.embedding = LazyEmbedding(config)
         self.static_encoder = StaticCovariateEncoder(config)
+
+        # intermediate weights to interpret
+        self.attention_weights = torch.Tensor(0)
+        self.historical_vsn_weights = torch.Tensor(0)
+        self.future_vsn_weights = torch.Tensor(0)
+        self.static_vsn_weights = torch.Tensor(0)
+
         if MAKE_CONVERT_COMPATIBLE:
             self.TFTpart2 = TFTBack(config, _attention_module)
         else:
@@ -499,7 +506,7 @@ class TemporalFusionTransformer(nn.Module):
         s_inp, t_known_inp, t_observed_inp, t_observed_tgt = self.embedding(x)
 
         # Static context
-        cs, ce, ch, cc = self.static_encoder(s_inp)
+        cs, ce, ch, cc, self.static_vsn_weights = self.static_encoder(s_inp)
         ch, cc = ch.unsqueeze(0), cc.unsqueeze(0) #lstm initial states
 
         # Temporal input
@@ -509,4 +516,5 @@ class TemporalFusionTransformer(nn.Module):
 
         historical_inputs = torch.cat(_historical_inputs, dim=-2)
         future_inputs = t_known_inp[:, self.encoder_length:]
-        return self.TFTpart2(historical_inputs, cs, ch, cc, ce, future_inputs)
+        out, self.attention_weights, self.historical_vsn_weights, self.future_vsn_weights = self.TFTpart2(historical_inputs, cs, ch, cc, ce, future_inputs)
+        return out

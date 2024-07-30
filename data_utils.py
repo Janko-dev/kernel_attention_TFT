@@ -620,3 +620,80 @@ def standarize_traffic(path):
   
     flat_df.to_csv(os.path.join(path, 'standarized.csv'))
 
+# Dataset specific download routines.
+def standardize_volatility(path):
+
+  # url = 'https://github.com/onnokleen/mfGARCH/raw/v0.1.9/data-raw/OxfordManRealizedVolatilityIndices.zip'
+
+  csv_path = os.path.join(path, 'oxfordmanrealizedvolatilityindices.csv')
+  df = pd.read_csv(csv_path, index_col=0)  # no explicit index
+
+  # Adds additional date/day fields
+  idx = [str(s).split('+')[0] for s in df.index
+        ]  # ignore timezones, we don't need them
+  dates = pd.to_datetime(idx)
+  df['date'] = dates
+  df['days_from_start'] = (dates - datetime.datetime(2000, 1, 3)).days
+  df['day_of_week'] = dates.dayofweek
+  df['day_of_month'] = dates.day
+  # print(dates.isocalendar().week)
+  df['week_of_year'] = dates.isocalendar().week.values
+  df['month'] = dates.month
+  df['year'] = dates.year
+  df['categorical_id'] = df['Symbol'].copy()
+
+  # Processes log volatility
+  vol = df['rv5_ss'].copy()
+  vol.loc[vol == 0.] = np.nan
+  df['log_vol'] = np.log(vol)
+
+  # Adds static information
+  symbol_region_mapping = {
+      '.AEX': 'EMEA',
+      '.AORD': 'APAC',
+      '.BFX': 'EMEA',
+      '.BSESN': 'APAC',
+      '.BVLG': 'EMEA',
+      '.BVSP': 'AMER',
+      '.DJI': 'AMER',
+      '.FCHI': 'EMEA',
+      '.FTMIB': 'EMEA',
+      '.FTSE': 'EMEA',
+      '.GDAXI': 'EMEA',
+      '.GSPTSE': 'AMER',
+      '.HSI': 'APAC',
+      '.IBEX': 'EMEA',
+      '.IXIC': 'AMER',
+      '.KS11': 'APAC',
+      '.KSE': 'APAC',
+      '.MXX': 'AMER',
+      '.N225': 'APAC ',
+      '.NSEI': 'APAC',
+      '.OMXC20': 'EMEA',
+      '.OMXHPI': 'EMEA',
+      '.OMXSPI': 'EMEA',
+      '.OSEAX': 'EMEA',
+      '.RUT': 'EMEA',
+      '.SMSI': 'EMEA',
+      '.SPX': 'AMER',
+      '.SSEC': 'APAC',
+      '.SSMI': 'EMEA',
+      '.STI': 'APAC',
+      '.STOXX50E': 'EMEA'
+  }
+
+  df['Region'] = df['Symbol'].apply(lambda k: symbol_region_mapping[k])
+
+  # Performs final processing
+  output_df_list = []
+  for grp in df.groupby('Symbol'):
+    sliced = grp[1].copy()
+    sliced.sort_values('days_from_start', inplace=True)
+    # Impute log volatility values
+    sliced['log_vol'] = sliced['log_vol'].ffill()
+    sliced.dropna()
+    output_df_list.append(sliced)
+
+  df = pd.concat(output_df_list, axis=0)
+
+  df.to_csv(os.path.join(path, 'standarized.csv'))

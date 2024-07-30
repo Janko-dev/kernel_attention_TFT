@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-: ${SEED:=1}
-: ${LR:=1e-3}
-: ${NGPU:=1}
-: ${BATCH_SIZE:=64}
-: ${EPOCHS:=100}
-: ${ATTN_NAME:=sdp}
+: ${EXP_NAME:=electricity}
+: ${EXP:=TFT_electricity_gridsearch_cp_bs64_lr1e-3_seed1}
 
-python -m torch.distributed.run --nproc_per_node=${NGPU} train.py \
-        --dataset electricity \
-        --data_path /data/processed/electricity_bin \
-        --batch_size=${BATCH_SIZE} \
-        --attn_name=${ATTN_NAME} \
-        --sample 450000 50000 \
-        --lr ${LR} \
-        --epochs ${EPOCHS} \
-        --seed ${SEED} \
-        --use_amp \
-        --clip_grad 0.01 \
-        --early_stopping 5 \
-        --results /results/TFT_electricity_bs${BATCH_SIZE}_lr${LR}_baseline/seed_${SEED}
+: ${CKECKPOINT_PATH:=/storage/results/${EXP}/best_model_checkpoint.pt}
+: ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
 
+python inference.py \
+    --checkpoint ${CKECKPOINT_PATH} \
+    --data ${EXP_DATA_PATH}/test.csv \
+    --tgt_scalers ${EXP_DATA_PATH}/tgt_scalers.bin \
+    --cat_encodings ${EXP_DATA_PATH}/cat_encodings.bin \
+    --batch_size 1024 \
+    --visualize \
+    --save_predictions \
+    --joint_visualization \
+    --results /storage/results/

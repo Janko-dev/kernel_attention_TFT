@@ -17,12 +17,13 @@ DATAPATH='/data'
 
 declare -A URLS=( ['electricity']='https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip'
                   ['traffic']='https://archive.ics.uci.edu/ml/machine-learning-databases/00204/PEMS-SF.zip'
+                  ['volatility']='https://github.com/onnokleen/mfGARCH/raw/v0.1.9/data-raw/OxfordManRealizedVolatilityIndices.zip'
                 )
 
 mkdir -p ${DATAPATH}/raw
 mkdir -p ${DATAPATH}/processed
 
-for DS in electricity traffic
+for DS in electricity traffic volatility
 do
 	DS_PATH=${DATAPATH}/raw/${DS}
 	ZIP_FNAME=${DS_PATH}.zip

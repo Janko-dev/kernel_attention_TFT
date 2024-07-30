@@ -246,7 +246,7 @@ sudo docker build --network=host -t tft .
 
 3.  Start an interactive session in the NGC container to run training/inference.
 ```bash
-sudo docker run -it --rm --ipc=host --network=host --gpus all -v ~/data/storage/data:/data/ tft
+sudo docker run -it --rm --ipc=host --network=host --gpus all -v ~/data/storage:/storage/ tft
 ```
 
 Note: Ensure to mount your dataset using the -v flag to make it available for training inside the NVIDIA Docker container.

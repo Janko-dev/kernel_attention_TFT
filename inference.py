@@ -18,6 +18,7 @@ import numpy as np
 import pickle
 import argparse
 import torch
+import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.cuda import amp
 from torch.utils.tensorboard import SummaryWriter
@@ -112,31 +113,35 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
 def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
     unscaled_predictions, unscaled_targets, ids, _ = predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=True)
 
+    unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
     num_horizons = config.example_length - config.encoder_length + 1
     pad = unscaled_predictions.new_full((unscaled_targets.shape[0], unscaled_targets.shape[1] - unscaled_predictions.shape[1], unscaled_predictions.shape[2]), fill_value=float('nan'))
     pad[:,-1,:] = unscaled_targets[:,-num_horizons,:]
     unscaled_predictions = torch.cat((pad, unscaled_predictions), dim=1)
 
-    ids = torch.from_numpy(ids.squeeze())
+    ids = ids.squeeze()
     joint_graphs = torch.cat([unscaled_targets, unscaled_predictions], dim=2)
     graphs = {i:joint_graphs[ids == i, :, :] for i in set(ids.tolist())}
+    n_samples = None if args.visualize == -1 else args.visualize
     for key, g in graphs.items():
-        for i, ex in enumerate(g):
-            df = pd.DataFrame(ex.numpy(), 
+        for i, ex in enumerate(g[:n_samples]):
+            ex = ex.numpy()
+            df = pd.DataFrame(ex[:, [0, 2]],
                     index=range(num_horizons - ex.shape[0], num_horizons),
-                    columns=['target'] + [f'P{int(q*100)}' for q in config.quantiles])
+                    columns=['Target', 'P50 prediction'])
             fig = df.plot().get_figure()
             ax = fig.get_axes()[0]
-            _values = df.values[config.encoder_length-1:,:]
+            _values = ex[config.encoder_length-1:, [1, 3]]
             ax.fill_between(range(num_horizons), _values[:,1], _values[:,-1], alpha=0.2, color='green')
             os.makedirs(os.path.join(args.results, 'single_example_vis', str(key)), exist_ok=True)
             fig.savefig(os.path.join(args.results, 'single_example_vis', str(key), f'{i}.pdf'))
-
+            plt.close(fig)
 def inference(args, config, model, data_loader, scalers, cat_encodings):
     unscaled_predictions, unscaled_targets, ids, perf_meter = predict(args, config, model, data_loader, scalers, cat_encodings)
+    unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
 
     if args.joint_visualization or args.save_predictions:
-        ids = torch.from_numpy(ids.squeeze())
+        ids = ids.squeeze()
         #ids = torch.cat([x['id'][0] for x in data_loader.dataset])
         joint_graphs = torch.cat([unscaled_targets, unscaled_predictions], dim=2)
         graphs = {i:joint_graphs[ids == i, :, :] for i in set(ids.tolist())}
@@ -175,7 +180,7 @@ def inference(args, config, model, data_loader, scalers, cat_encodings):
     #        torch.from_numpy(unscaled_targets).contiguous()).numpy()
     #normalizer = np.mean(np.abs(unscaled_targets))
     #q_risk = 2 * losses / normalizer
-    risk = qrisk(unscaled_predictions, unscaled_targets, np.array(config.quantiles))
+    risk = qrisk(unscaled_predictions.numpy(), unscaled_targets.numpy(), np.array(config.quantiles))
 
     perf_dict = {
                 'throughput': perf_meter.avg,
@@ -196,7 +201,7 @@ def main(args):
     state_dict = torch.load(args.checkpoint)
     config = state_dict['config']
     attn_hparams = state_dict['attn_hparams']
-    attn_module_class = make_attn_module_class(state_dict['args']['attn_name'])
+    attn_module_class = make_attn_module_class(state_dict['args'].attn_name)
 
     attn_module = attn_module_class(**attn_hparams)
     model = TemporalFusionTransformer(config, attn_module).cuda()
@@ -211,7 +216,7 @@ def main(args):
     scalers = pickle.load(open(args.tgt_scalers, 'rb'))
     cat_encodings = pickle.load(open(args.cat_encodings, 'rb'))
 
-    if args.visualize:
+    if args.visualize != 0:
         # TODO: abstract away all forms of visualization.
         visualize_v2(args, config, model, data_loader, scalers, cat_encodings)
 
@@ -234,11 +239,14 @@ if __name__=='__main__':
     parser.add_argument('--cat_encodings', type=str,
                         help='Path to the cat_encodings.bin file produced by the preprocessing')
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--visualize', action='store_true', help='Visualize predictions - each example on the separate plot')
-    parser.add_argument('--joint_visualization', action='store_true', help='Visualize predictions - each timeseries on separate plot. Projections will be concatenated.')
+    parser.add_argument('--visualize', type=int, default=32,
+                        help='Amount of sample predictions to visualize - each example on the separate plot. -1 means all predictions, and 0 means no predictions.')
+    parser.add_argument('--joint_visualization', action='store_true',
+                        help='Visualize predictions - each timeseries on separate plot. Projections will be concatenated.')
     parser.add_argument('--save_predictions', action='store_true')
     parser.add_argument('--results', type=str, default='/results')
     parser.add_argument('--log_file', type=str, default='dllogger.json')
-    parser.add_argument("--disable_benchmark", action='store_true', help='Disable benchmarking mode')
+    parser.add_argument("--disable_benchmark", action='store_true',
+                        help='Disable benchmarking mode')
     ARGS = parser.parse_args()
     main(ARGS)

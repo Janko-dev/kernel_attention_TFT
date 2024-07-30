@@ -49,9 +49,9 @@ class ElectricityConfig:
         self.encoder_length = 7 * 24
 
         self.n_head = 4
-        self.hidden_size = 128
+        self.hidden_size = 160
         self.dropout = 0.1
-        self.attn_dropout = 0.0
+        self.attn_dropout = 0.1
 
         #### Derived variables ####
         self.temporal_known_continuous_inp_size = len([x for x in self.features 
@@ -89,7 +89,7 @@ class TrafficConfig:
         self.valid_range = (144, 166)
         self.test_range = (159, float('inf'))
         self.dataset_stride = 1 #how many timesteps between examples
-        self.scale_per_id = False
+        self.scale_per_id = True
         self.missing_id_strategy = None
         self.missing_cat_data_strategy='encode_all'
 
@@ -103,9 +103,9 @@ class TrafficConfig:
         self.encoder_length = 7 * 24
 
         self.n_head = 4
-        self.hidden_size = 128
+        self.hidden_size = 320
         self.dropout = 0.3
-        self.attn_dropout = 0.0
+        self.attn_dropout = 0.3
 
         #### Derived variables ####
         self.temporal_known_continuous_inp_size = len([x for x in self.features 
@@ -152,17 +152,17 @@ class VolatilityConfig:
 
         # Feature sizes
         self.static_categorical_inp_lens = [4]
-        self.temporal_known_categorical_inp_lens = []
+        self.temporal_known_categorical_inp_lens = [7, 31, 53, 12]
         self.temporal_observed_categorical_inp_lens = []
         self.quantiles = [0.1, 0.5, 0.9]
 
-        self.example_length = 8 * 24
-        self.encoder_length = 7 * 24
+        self.example_length = 257
+        self.encoder_length = 252
 
-        self.n_head = 4
-        self.hidden_size = 128
+        self.n_head = 1
+        self.hidden_size = 160
         self.dropout = 0.3
-        self.attn_dropout = 0.0
+        self.attn_dropout = 0.3
 
         #### Derived variables ####
         self.temporal_known_continuous_inp_size = len([x for x in self.features
