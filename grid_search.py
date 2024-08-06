@@ -85,7 +85,7 @@ def main(args):
     criterion = QuantileLoss(config).cuda()
 
     best_val_loss = float('inf')
-
+    is_nan = False
     for attn_hparams in attn_hparam_grid:
 
         attn_hparams['dropout_rate'] = config.attn_dropout
@@ -128,6 +128,9 @@ def main(args):
                     targets = batch['target'][:,config.encoder_length:,:]
                     p_losses = criterion(predictions, targets)
                     loss = p_losses.sum()
+                    if loss.isnan().any():
+                    	is_nan = True
+                    	break
                 if global_step == 0 and args.ema_decay:
                     model_ema(batch)
                 if args.use_amp:
@@ -162,6 +165,10 @@ def main(args):
                 dllogger.log(step=global_step, data=log_dict, verbosity=1)
                 global_step += 1
 
+            if is_nan: 
+            	print('NaN encountered')
+            	break
+            
             validate(args, config, model_ema if args.ema_decay else model, criterion, valid_loader, global_step, attn_hparams)
 
             if validate.early_stop_c >= args.early_stopping:
