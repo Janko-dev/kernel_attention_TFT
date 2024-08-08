@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import List
 import os
 import torch
 import torch.nn as nn
@@ -510,7 +511,7 @@ class TemporalFusionTransformer(nn.Module):
 
 
 class AltInterpretableMultiHeadAttention(nn.Module):
-    def __init__(self, config, _attention_modules: list[nn.Module]):
+    def __init__(self, config, _attention_modules: List[nn.Module]):
         super().__init__()
         self.n_head = len(_attention_modules)
         assert config.hidden_size % self.n_head == 0
@@ -547,14 +548,14 @@ class AltInterpretableMultiHeadAttention(nn.Module):
 
 class AltTFTBack(TFTBack):
 
-    def __init__(self, config, _attention_modules: list[nn.Module]):
+    def __init__(self, config, _attention_modules: List[nn.Module]):
         super().__init__(config)
 
         self.attention = AltInterpretableMultiHeadAttention(config, _attention_modules)
 
 class AltTemporalFusionTransformer(nn.Module):
 
-    def __init__(self, config, _attention_modules: list[nn.Module] = []):
+    def __init__(self, config, _attention_modules: List[nn.Module] = []):
         super().__init__()
 
         if len(_attention_modules) == 0:
