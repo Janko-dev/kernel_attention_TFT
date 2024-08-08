@@ -132,7 +132,7 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
             fig = df.plot().get_figure()
             ax = fig.get_axes()[0]
             _values = ex[config.encoder_length-1:, [1, 3]]
-            ax.fill_between(range(num_horizons), _values[:,1], _values[:,-1], alpha=0.2, color='green')
+            ax.fill_between(range(num_horizons), _values[:,0], _values[:,1], alpha=0.2, color='green')
             os.makedirs(os.path.join(args.results, 'single_example_vis', str(key)), exist_ok=True)
             fig.savefig(os.path.join(args.results, 'single_example_vis', str(key), f'{i}.pdf'))
             plt.close(fig)
