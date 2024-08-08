@@ -24,7 +24,7 @@
 
 #ATTN_NAMES=(sdp lin exp per lp rq imp cp)
 
-python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search.py \
+python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search_combined.py \
           --dataset ${EXP_NAME} \
           --data_path /storage/data/processed/${EXP_NAME}_bin \
           --attn_names lin exp exp per per lp lp \
