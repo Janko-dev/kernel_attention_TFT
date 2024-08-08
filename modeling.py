@@ -346,17 +346,6 @@ class InterpretableMultiHeadAttention(nn.Module):
         k = k.view(bs, t, self.n_head, self.d_head)
         v = v.view(bs, t, self.d_head)
 
-        # attn_score = torch.einsum('bind,bjnd->bnij', q, k)
-        # attn_score = torch.matmul(q.permute((0, 2, 1, 3)), k.permute((0, 2, 3, 1)))
-        # attn_score.mul_(self.scale)
-        #
-        # attn_score = attn_score + self._mask
-        #
-        # attn_prob = F.softmax(attn_score, dim=3)
-        # attn_prob = self.attn_dropout(attn_prob)
-        #
-        # # attn_vec = torch.einsum('bnij,bjd->bnid', attn_prob, v)
-        # attn_vec = torch.matmul(attn_prob, v.unsqueeze(1))
         attn_vec, attn_prob = self.attention(q.transpose(1, 2), k.transpose(1, 2), v.unsqueeze(1), self._mask)
 
         m_attn_vec = torch.mean(attn_vec, dim=1)
@@ -501,6 +490,94 @@ class TemporalFusionTransformer(nn.Module):
             self.TFTpart2 = TFTBack(config, _attention_module)
         else:
             self.TFTpart2 = torch.jit.script(TFTBack(config, _attention_module))
+
+    def forward(self, x: Dict[str, Tensor]) -> Tensor:
+        s_inp, t_known_inp, t_observed_inp, t_observed_tgt = self.embedding(x)
+
+        # Static context
+        cs, ce, ch, cc, self.static_vsn_weights = self.static_encoder(s_inp)
+        ch, cc = ch.unsqueeze(0), cc.unsqueeze(0) #lstm initial states
+
+        # Temporal input
+        _historical_inputs = [t_known_inp[:,:self.encoder_length,:], t_observed_tgt[:,:self.encoder_length,:]]
+        if t_observed_inp is not None:
+            _historical_inputs.insert(0,t_observed_inp[:,:self.encoder_length,:])
+
+        historical_inputs = torch.cat(_historical_inputs, dim=-2)
+        future_inputs = t_known_inp[:, self.encoder_length:]
+        out, self.attention_weights, self.historical_vsn_weights, self.future_vsn_weights = self.TFTpart2(historical_inputs, cs, ch, cc, ce, future_inputs)
+        return out
+
+
+class AltInterpretableMultiHeadAttention(nn.Module):
+    def __init__(self, config, _attention_modules: list[nn.Module]):
+        super().__init__()
+        self.n_head = len(_attention_modules)
+        assert config.hidden_size % self.n_head == 0
+        self.d_head = config.hidden_size // self.n_head
+        self.qkv_linears = nn.Linear(config.hidden_size, (2 * self.n_head + 1) * self.d_head, bias=False)
+        self.out_proj = nn.Linear(self.d_head, config.hidden_size, bias=False)
+        # self.attn_dropout = nn.Dropout(config.attn_dropout)
+        self.out_dropout = nn.Dropout(config.dropout)
+        # self.scale = self.d_head**-0.5
+        self.attention_modules = nn.ModuleList(_attention_modules)
+        # self.register_buffer("_mask", torch.triu(torch.full((config.example_length, config.example_length), 0.0), 1).unsqueeze(0))
+        self.register_buffer("_mask", torch.tril(torch.full((config.example_length, config.example_length), 1.0), 0))
+
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+        bs, t, h_size = x.shape
+        qkv = self.qkv_linears(x)
+        q, k, v = qkv.split((self.n_head * self.d_head, self.n_head * self.d_head, self.d_head), dim=-1)
+        q = q.view(bs, t, self.n_head, self.d_head)
+        k = k.view(bs, t, self.n_head, self.d_head)
+        v = v.view(bs, t, self.d_head)
+
+        attn_vecs, attn_probs = [], []
+        for i, attention in enumerate(self.attention_modules):
+            attn_vec, attn_prob = attention(q[:, :, i].unsqueeze(1), k[:, :, i].unsqueeze(1), v.unsqueeze(1), self._mask)
+            attn_vecs.append(attn_vec.squeeze(dim=1))
+            attn_probs.append(attn_prob.squeeze(dim=1))
+
+        m_attn_vec = torch.stack(attn_vecs, dim=1).mean(dim=1)
+        attn_probs = torch.stack(attn_probs, dim=1)
+        out = self.out_proj(m_attn_vec)
+        out = self.out_dropout(out)
+
+        return out, attn_probs
+
+class AltTFTBack(TFTBack):
+
+    def __init__(self, config, _attention_modules: list[nn.Module]):
+        super().__init__(config)
+
+        self.attention = AltInterpretableMultiHeadAttention(config, _attention_modules)
+
+class AltTemporalFusionTransformer(nn.Module):
+
+    def __init__(self, config, _attention_modules: list[nn.Module] = []):
+        super().__init__()
+
+        if len(_attention_modules) == 0:
+            _attention_modules = [DotProductAttention()]
+
+        if hasattr(config, 'model'):
+            config = config.model
+
+        self.encoder_length = config.encoder_length #this determines from how distant past we want to use data from
+
+        self.embedding = LazyEmbedding(config)
+        self.static_encoder = StaticCovariateEncoder(config)
+
+        # intermediate weights to interpret
+        self.attention_weights = torch.Tensor(0)
+        self.historical_vsn_weights = torch.Tensor(0)
+        self.future_vsn_weights = torch.Tensor(0)
+        self.static_vsn_weights = torch.Tensor(0)
+
+        if MAKE_CONVERT_COMPATIBLE:
+            self.TFTpart2 = AltTFTBack(config, _attention_modules)
+        else:
+            self.TFTpart2 = torch.jit.script(AltTFTBack(config, _attention_modules))
 
     def forward(self, x: Dict[str, Tensor]) -> Tensor:
         s_inp, t_known_inp, t_observed_inp, t_observed_tgt = self.embedding(x)
