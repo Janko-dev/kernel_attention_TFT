@@ -27,7 +27,7 @@
 python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search_combined.py \
           --dataset ${EXP_NAME} \
           --data_path /storage/data/processed/${EXP_NAME}_bin \
-          --attn_names lin exp exp per per lp lp \
+          --attn_names lin exp per lp \
           --batch_size=${BATCH_SIZE} \
           --sample 450000 50000 \
           --lr ${LR} \
