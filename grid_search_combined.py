@@ -225,7 +225,7 @@ def main(args):
     dllogger.log(step=(), data=finish_log, verbosity=1)
     
     finish_log['exp_name'] = args.dataset
-    finish_log['attn_name'] = args.attn_name
+    finish_log['attn_names'] = args.attn_names
     finish_log['attn_hparams'] = state_dict['attn_hparams']
     finish_log['config'] = state_dict['config'].__dict__
     
