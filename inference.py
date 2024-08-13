@@ -172,7 +172,7 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
 
             for j in range(config.n_head):
                 ax2.plot(attn[j], label=f"Attention head {j + 1}")
-            ax2.axvline(range(config.encoder_length), linestyle='--', color='k')
+            ax2.axvline(config.encoder_length, linestyle='--', color='k')
             ax2.legend()
 
             ax1.set_title("Quantile Prediction horizon")
