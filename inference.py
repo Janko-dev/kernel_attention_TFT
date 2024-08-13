@@ -149,7 +149,10 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
 
 def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
     (unscaled_predictions, unscaled_targets, ids, _,
-     attention_weights, historical_vsn_weights, future_vsn_weights, static_vsn_weights) = predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=True, return_attn_vsn_weights=True)
+     attention_weights, historical_vsn_weights, future_vsn_weights, static_vsn_weights) = predict(args, config, model, data_loader, scalers, cat_encodings,
+                                                                                                  extend_targets=True,
+                                                                                                  return_attn_vsn_weights=True,
+                                                                                                  visualize_attn_weights=True)
 
     unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
     attention_weights = torch.Tensor(attention_weights)
