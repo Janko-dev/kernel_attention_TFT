@@ -93,12 +93,13 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
 
                 if return_attn_vsn_weights:
                     attention_weights.append(model.attention_weights[:, :, -1].float().cpu())
-                    print(model.historical_vsn_weights.shape)
-                    print(model.future_vsn_weights.shape)
-                    print(model.static_vsn_weights.shape)
-                    # historical_vsn_weights.append(model.historical_vsn_weights.float())
-                    # future_vsn_weights.append(model.future_vsn_weights.float())
-                    # static_vsn_weights.append(model.static_vsn_weights.float())
+                    # print(model.historical_vsn_weights.shape) # (batch_size, enc_length, N) where N = known vars
+                    # print(model.future_vsn_weights.shape) # (batch_size, dec_length, M) where M = unknown vars
+                    # print(model.static_vsn_weights.shape) # (batch_size, n_statics)
+
+                    historical_vsn_weights.append(model.historical_vsn_weights.float().cpu())
+                    future_vsn_weights.append(model.future_vsn_weights.float().cpu())
+                    static_vsn_weights.append(model.static_vsn_weights.float().cpu())
 
             perf_meter.update(args.batch_size * n_workers,
                 exclude_from_total=step in [0, 1, 2, len(data_loader)-1])
