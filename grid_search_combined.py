@@ -225,11 +225,11 @@ def main(args):
     dllogger.log(step=(), data=finish_log, verbosity=1)
     
     finish_log['exp_name'] = args.dataset
-    finish_log['attn_name'] = args.attn_name
+    finish_log['attn_names'] = args.attn_names
     finish_log['attn_hparams'] = state_dict['attn_hparams']
     finish_log['config'] = state_dict['config'].__dict__
     
-    results_path = os.path.join(args.results, f'results_{args.dataset}_{args.attn_name}.json')
+    results_path = os.path.join(args.results, f'results_{args.dataset}_{"_".join(args.attn_names)}.json')
     with open(results_path, 'w') as f:
         json.dump(finish_log, f)
     
