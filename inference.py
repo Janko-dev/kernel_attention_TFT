@@ -93,6 +93,9 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
 
                 if return_attn_vsn_weights:
                     attention_weights.append(model.attention_weights[:, :, -1].float().cpu())
+                    print(model.historical_vsn_weights.shape)
+                    print(model.future_vsn_weights.shape)
+                    print(model.static_vsn_weights.shape)
                     # historical_vsn_weights.append(model.historical_vsn_weights.float())
                     # future_vsn_weights.append(model.future_vsn_weights.float())
                     # static_vsn_weights.append(model.static_vsn_weights.float())

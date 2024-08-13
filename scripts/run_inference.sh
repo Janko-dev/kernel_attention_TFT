@@ -27,4 +27,4 @@ python inference.py \
     --visualize 24 \
     --save_predictions \
     --joint_visualization \
-    --results /storage/inference_results_cp/
+    --results /storage/inference_results_sdp/
