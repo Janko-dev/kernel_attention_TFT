@@ -69,7 +69,20 @@ def _unscale(config, values, scaler):
     flat_values = flat_values[[col for col in flat_values if not 'id' in col]]
     return flat_values.values
 
-def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False):
+def visualize_attn_grids(args, config, key, step, attn):
+
+    fig, axes = plt.subplots(1, config.n_head, figsize=(config.n_head * 5, 5))
+    for j, ax in enumerate(axes):
+        ax.grid(False)
+        ax.imshow(attn[j])
+        ax.set_title(f"attention head {j + 1}")
+    plt.tight_layout()
+
+    os.makedirs(os.path.join(args.results, 'attn_grid_vis', str(key)), exist_ok=True)
+    fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key), f'{step}.pdf'))
+    plt.close(fig)
+
+def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_attn_weights=False):
     model.eval()
     predictions = []
     targets = []
@@ -91,15 +104,14 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
                 targets.append(batch['target'])
                 predictions.append(model(batch).float())
 
+                if visualize_attn_weights:
+                    visualize_attn_grids(args, config, ids[-1], step, model.attention_weights.float().cpu())
+
                 if return_attn_vsn_weights:
                     attention_weights.append(model.attention_weights[:, :, -1].float().cpu())
-                    # print(model.historical_vsn_weights.shape) # (batch_size, enc_length, N) where N = known vars
-                    # print(model.future_vsn_weights.shape) # (batch_size, dec_length, M) where M = unknown vars
-                    # print(model.static_vsn_weights.shape) # (batch_size, n_statics)
-
-                    historical_vsn_weights.append(model.historical_vsn_weights.float().cpu())
-                    future_vsn_weights.append(model.future_vsn_weights.float().cpu())
-                    static_vsn_weights.append(model.static_vsn_weights.float().cpu())
+                    historical_vsn_weights.append(model.historical_vsn_weights.float().cpu()) # (batch_size, enc_length, N) where N = known vars
+                    future_vsn_weights.append(model.future_vsn_weights.float().cpu()) # (batch_size, dec_length, M) where M = unknown vars
+                    static_vsn_weights.append(model.static_vsn_weights.float().cpu()) # (batch_size, n_statics)
 
             perf_meter.update(args.batch_size * n_workers,
                 exclude_from_total=step in [0, 1, 2, len(data_loader)-1])
@@ -139,9 +151,9 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
 
     unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
     attention_weights = torch.Tensor(attention_weights)
-    historical_vsn_weights = torch.Tensor(historical_vsn_weights)
-    future_vsn_weights = torch.Tensor(future_vsn_weights)
-    static_vsn_weights = torch.Tensor(static_vsn_weights)
+    # historical_vsn_weights = torch.Tensor(historical_vsn_weights)
+    # future_vsn_weights = torch.Tensor(future_vsn_weights)
+    # static_vsn_weights = torch.Tensor(static_vsn_weights)
 
     num_horizons = config.example_length - config.encoder_length + 1
     pad = unscaled_predictions.new_full((unscaled_targets.shape[0], unscaled_targets.shape[1] - unscaled_predictions.shape[1], unscaled_predictions.shape[2]), fill_value=float('nan'))
@@ -182,22 +194,13 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
             ax2.axvline(0, linestyle='--', color='k')
             ax2.legend()
 
-            ax1.set_title("Quantile Prediction horizon")
+            ax1.set_title("Quantile Prediction")
             ax2.set_title(f"Attention weights for horizon: $0: t_0+{num_horizons-1}$")
 
             plt.tight_layout()
 
             os.makedirs(os.path.join(args.results, 'pred_attn_vis', str(key)), exist_ok=True)
             fig.savefig(os.path.join(args.results, 'pred_attn_vis', str(key), f'{i}.pdf'))
-            plt.close(fig)
-
-            fig, axes = plt.subplots(1, config.n_head, figsize=(config.n_head * 5, 5))
-            for j, ax in enumerate(axes):
-                ax.grid(False)
-                ax.imshow(attn[j])
-                ax.set_title(f"attention head {j + 1}")
-            plt.tight_layout()
-            fig.savefig(os.path.join(args.results, 'pred_attn_vis', str(key), f'grid_{i}.pdf'))
             plt.close(fig)
 
 def inference(args, config, model, data_loader, scalers, cat_encodings):
