@@ -24,7 +24,7 @@ python inference.py \
     --tgt_scalers ${EXP_DATA_PATH}/tgt_scalers.bin \
     --cat_encodings ${EXP_DATA_PATH}/cat_encodings.bin \
     --batch_size 64 \
-    --visualize 24 \
+    --visualize 2 \
     --save_predictions \
     --joint_visualization \
     --results /storage/inference_results_sdp/

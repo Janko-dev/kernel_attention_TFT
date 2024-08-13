@@ -159,29 +159,36 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
         for i, (ex, attn) in enumerate(zip(g[:n_samples], attn_graphs[key][:n_samples])):
             ex = ex.numpy()
             attn = attn.numpy()
-            print(attn.shape)
-            df = pd.DataFrame(ex[:, [0, 2]],
-                    index=range(num_horizons - ex.shape[0], num_horizons),
-                    columns=['Target', 'P50 prediction'])
+            source_range = range(num_horizons - ex.shape[0], 0)
+            target_range = range(0, num_horizons)
 
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
 
-            df.plot(ax=ax1)
-            _values = ex[config.encoder_length-1:, [1, 3]]
-            ax1.fill_between(range(num_horizons), _values[:,0], _values[:,1], alpha=0.2, color='green')
+            source = ex[:config.encoder_length, 0]
+            target = ex[:config.encoder_length-1, 0]
+            pred = ex[config.encoder_length-1:, 2]
 
+            ax1.plot(source_range, source, '--r', label="Source: 0: t_0")
+            ax1.plot(target_range, target, '--b', label=f"Target: $t_0+1: t_0+{num_horizons-1}$")
+            ax1.plot(target_range, pred, '-g', label=f"Prediction: $t_0+1: t_0+{num_horizons-1}$")
+            _values = ex[config.encoder_length-1:, [1, 3]]
+            ax1.fill_between(target_range, _values[:,0], _values[:,1], alpha=0.2, color='green', label=f"Prediction quantiles: $t_0+1: t_0+{num_horizons-1}$")
+            ax1.axvline(config.encoder_length, linestyle='--', color='k')
+            ax1.legend()
+
+            total_range = list(source_range) + list(target_range)
             for j in range(config.n_head):
-                ax2.plot(attn[j], label=f"Attention head {j + 1}")
+                ax2.plot(total_range, attn[j], label=f"Attention head {j + 1}")
             ax2.axvline(config.encoder_length, linestyle='--', color='k')
             ax2.legend()
 
             ax1.set_title("Quantile Prediction horizon")
-            ax2.set_title(f"Attention weights for horizon: $0: t_0+{num_horizons}$")
+            ax2.set_title(f"Attention weights for horizon: $0: t_0+{num_horizons-1}$")
 
             plt.tight_layout()
 
-            os.makedirs(os.path.join(args.results, 'single_example_vis', str(key)), exist_ok=True)
-            fig.savefig(os.path.join(args.results, 'single_example_vis', str(key), f'{i}.pdf'))
+            os.makedirs(os.path.join(args.results, 'pred_attn_vis', str(key)), exist_ok=True)
+            fig.savefig(os.path.join(args.results, 'pred_attn_vis', str(key), f'{i}.pdf'))
             plt.close(fig)
 
 def inference(args, config, model, data_loader, scalers, cat_encodings):
