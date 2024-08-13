@@ -15,20 +15,24 @@
 : ${SEED:=1}
 : ${LR:=1e-3}
 : ${NGPU:=1}
-: ${BATCH_SIZE:=128}
+: ${BATCH_SIZE:=64}
 : ${EPOCHS:=100}
 : ${MAX_GRAD_NORM:=100}
 : ${PATIENCE:=5}
-: ${EXP_NAME:=traffic}
 
 ATTN_NAMES=(sdp lin exp per lp rq imp cp)
+
+: ${EXP_NAME:=traffic}
+: ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
 
 for ATTN_NAME in ${ATTN_NAMES[@]}
 do
 
+  : ${EXP_RESULTS_PATH:=/storage/results/${EXP_NAME}/grid_search_${EXP_NAME}_${ATTN_NAME}}
+
   python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search.py \
           --dataset ${EXP_NAME} \
-          --data_path /storage/data/processed/${EXP_NAME}_bin \
+          --data_path ${EXP_DATA_PATH} \
           --attn_name=${ATTN_NAME} \
           --batch_size=${BATCH_SIZE} \
           --sample 450000 50000 \
@@ -38,10 +42,10 @@ do
           --use_amp \
           --clip_grad ${MAX_GRAD_NORM} \
           --early_stopping ${PATIENCE} \
-          --results /storage/results/gridsearch_${EXP_NAME}_${ATTN_NAME}_bs${BATCH_SIZE}_lr${LR}_seed${SEED}
+          --results ${EXP_RESULTS_PATH}
 done
 
-for P in `ls /storage/results/`;
+for P in `ls /storage/results/${EXP_NAME}`;
 do
     echo ${P}
     tail -n 1 /storage/results/${P}/dllogger.json
