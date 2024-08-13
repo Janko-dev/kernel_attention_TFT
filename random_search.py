@@ -84,11 +84,6 @@ def main(args):
 
     criterion = QuantileLoss(config).cuda()
 
-    progress_path = os.path.join(args.results, f'progress_{args.dataset}_{args.attn_name}.json')
-    progress_feed = []
-    with open(progress_path, 'w') as f:
-        json.dump(progress_feed, f)
-
     best_val_loss = float('inf')
     is_nan = False
     for attn_hparams in attn_hparam_grid:
@@ -186,10 +181,6 @@ def main(args):
             ckpt = {'args': args, 'config': config, 'model': state_dict, 'attn_hparams': attn_hparams}
             torch.save(ckpt, os.path.join(args.results, 'best_model_checkpoint.pt'))
 
-        with open(progress_path, 'w') as f:
-            progress_feed.append({'args': args, 'config': config, 'attn_hparams': attn_hparams})
-            json.dump(progress_feed, f)
-
     ### TEST PHASE ###
     state_dict = torch.load(os.path.join(args.results, 'best_model_checkpoint.pt'), map_location='cpu')
     print(state_dict['args'])
@@ -232,6 +223,7 @@ def main(args):
     results_path = os.path.join(args.results, f'results_{args.dataset}_{args.attn_name}.json')
     with open(results_path, 'w') as f:
         json.dump(finish_log, f)
+    
 
 def validate(args, config, model, criterion, dataloader, global_step, attn_hparams):
     if not hasattr(validate, 'best_valid_loss'):
@@ -295,10 +287,10 @@ if __name__ == '__main__':
                         help="""Subsample the dataset. Specify number of training and valid examples.
                         Values can be provided in scientific notation. Floats will be truncated.""")
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--seed', type=int, default=1)
+    # parser.add_argument('--lr', type=float, default=1e-3)
+    # parser.add_argument('--seed', type=int, default=1)
+    # parser.add_argument('--clip_grad', type=float, default=0.0)
     parser.add_argument('--use_amp', action='store_true', help='Enable automatic mixed precision')
-    parser.add_argument('--clip_grad', type=float, default=0.0)
     parser.add_argument('--grad_accumulation', type=int, default=0)
     parser.add_argument('--early_stopping', type=int, default=1000,
                         help='Stop training if validation loss does not improve for more than this number of epochs.')

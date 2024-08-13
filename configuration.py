@@ -284,50 +284,135 @@ def get_attention_hparam_grid(attn_name):
         'sdp': [{}],
         'lin': [{}],
         'exp': [
+            # with magnitude
             {"p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
             {"p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
             {"p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
-            {"p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": False},
+            # without magnitude
+            {"p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            {"p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
         ],
         'per': [
+            # p_norm=0 (without magnitude)
+            {"period": 0.01, "p_norm": 0, "include_magnitude": False},
+            {"period": 0.1, "p_norm": 0, "include_magnitude": False},
+            {"period": 1, "p_norm": 0, "include_magnitude": False},
+            {"period": 10, "p_norm": 0, "include_magnitude": False},
+            {"period": 100, "p_norm": 0, "include_magnitude": False},
+            # p_norm=1
+            {"period": 0.01, "p_norm": 1, "include_magnitude": True},
+            {"period": 0.1, "p_norm": 1, "include_magnitude": True},
+            {"period": 1, "p_norm": 1, "include_magnitude": True},
+            {"period": 10, "p_norm": 1, "include_magnitude": True},
+            {"period": 100, "p_norm": 1, "include_magnitude": True},
+            # p_norm=2
             {"period": 0.01, "p_norm": 2, "include_magnitude": True},
             {"period": 0.1, "p_norm": 2, "include_magnitude": True},
             {"period": 1, "p_norm": 2, "include_magnitude": True},
             {"period": 10, "p_norm": 2, "include_magnitude": True},
+            {"period": 100, "p_norm": 2, "include_magnitude": True},
         ],
         'lp': [
+            # p_norm=0 (without magnitude)
+            {"period": 0.01, "p_norm": 0, "include_magnitude": False},
+            {"period": 0.1, "p_norm": 0, "include_magnitude": False},
+            {"period": 1, "p_norm": 0, "include_magnitude": False},
+            {"period": 10, "p_norm": 0, "include_magnitude": False},
+            {"period": 100, "p_norm": 0, "include_magnitude": False},
+            # p_norm=1
+            {"period": 0.01, "p_norm": 1, "include_magnitude": True},
+            {"period": 0.1, "p_norm": 1, "include_magnitude": True},
+            {"period": 1, "p_norm": 1, "include_magnitude": True},
+            {"period": 10, "p_norm": 1, "include_magnitude": True},
+            {"period": 100, "p_norm": 1, "include_magnitude": True},
+            # p_norm=2
             {"period": 0.01, "p_norm": 2, "include_magnitude": True},
             {"period": 0.1, "p_norm": 2, "include_magnitude": True},
             {"period": 1, "p_norm": 2, "include_magnitude": True},
             {"period": 10, "p_norm": 2, "include_magnitude": True},
+            {"period": 100, "p_norm": 2, "include_magnitude": True},
         ],
         'rq': [
+            # p_norm=0 (without magnitude)
+            {"alpha": 0.01, "p_norm": 0, "include_magnitude": False},
+            {"alpha": 0.1, "p_norm": 0, "include_magnitude": False},
+            {"alpha": 1, "p_norm": 0, "include_magnitude": False},
+            {"alpha": 10, "p_norm": 0, "include_magnitude": False},
+            {"alpha": 100, "p_norm": 0, "include_magnitude": False},
+            # p_norm=1
+            {"alpha": 0.01, "p_norm": 1, "include_magnitude": True},
+            {"alpha": 0.1, "p_norm": 1, "include_magnitude": True},
+            {"alpha": 1, "p_norm": 1, "include_magnitude": True},
+            {"alpha": 10, "p_norm": 1, "include_magnitude": True},
+            {"alpha": 100, "p_norm": 1, "include_magnitude": True},
+            # p_norm=2
             {"alpha": 0.01, "p_norm": 2, "include_magnitude": True},
             {"alpha": 0.1, "p_norm": 2, "include_magnitude": True},
             {"alpha": 1, "p_norm": 2, "include_magnitude": True},
             {"alpha": 10, "p_norm": 2, "include_magnitude": True},
+            {"alpha": 100, "p_norm": 2, "include_magnitude": True},
         ],
         'imp': [
+            # p_norm=0 (without magnitude)
+            {"R_features": 32, "p_norm": 0, "include_magnitude": False},
+            {"R_features": 64, "p_norm": 0, "include_magnitude": False},
+            {"R_features": 128, "p_norm": 0, "include_magnitude": False},
+            {"R_features": 256, "p_norm": 0, "include_magnitude": False},
+            # p_norm=1
+            {"R_features": 32, "p_norm": 1, "include_magnitude": True},
+            {"R_features": 64, "p_norm": 1, "include_magnitude": True},
+            {"R_features": 128, "p_norm": 1, "include_magnitude": True},
+            {"R_features": 256, "p_norm": 1, "include_magnitude": True},
+            # p_norm=2
+            {"R_features": 32, "p_norm": 2, "include_magnitude": True},
             {"R_features": 64, "p_norm": 2, "include_magnitude": True},
             {"R_features": 128, "p_norm": 2, "include_magnitude": True},
+            {"R_features": 256, "p_norm": 2, "include_magnitude": True},
         ],
         'cp': [
-            # sim=2, mag=2
+            ## p_norm_sim=2
+            # p_norm=0 (without magnitude)
+            {"period": 0.01, "p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 0.1, "p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 1, "p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 10, "p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 100, "p_norm_sim": 2, "p_norm_mag": 0, "include_magnitude": False},
+            # p_norm=1
+            {"period": 0.01, "p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 0.1, "p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 1, "p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 10, "p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 100, "p_norm_sim": 2, "p_norm_mag": 1, "include_magnitude": True},
+            # p_norm=2
             {"period": 0.01, "p_norm_sim": 2, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 0.1, "p_norm_sim": 2, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 1, "p_norm_sim": 2, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 10, "p_norm_sim": 2, "p_norm_mag": 2, "include_magnitude": True},
-            # sim=1, mag=2
+            {"period": 100, "p_norm_sim": 2, "p_norm_mag": 2, "include_magnitude": True},
+
+            ## p_norm_sim=1
+            # p_norm=0 (without magnitude)
+            {"period": 0.01, "p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 0.1, "p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 1, "p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 10, "p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            {"period": 100, "p_norm_sim": 1, "p_norm_mag": 0, "include_magnitude": False},
+            # p_norm=1
+            {"period": 0.01, "p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 0.1, "p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 1, "p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 10, "p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
+            {"period": 100, "p_norm_sim": 1, "p_norm_mag": 1, "include_magnitude": True},
+            # p_norm=2
             {"period": 0.01, "p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 0.1, "p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 1, "p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
             {"period": 10, "p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
+            {"period": 100, "p_norm_sim": 1, "p_norm_mag": 2, "include_magnitude": True},
         ],
     }
 
     return hranges[attn_name]
-
-
 
 CONFIGS = {'electricity':  ElectricityConfig,
            'traffic':      TrafficConfig,
