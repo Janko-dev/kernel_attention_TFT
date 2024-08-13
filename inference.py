@@ -69,18 +69,20 @@ def _unscale(config, values, scaler):
     flat_values = flat_values[[col for col in flat_values if not 'id' in col]]
     return flat_values.values
 
-def visualize_attn_grids(args, config, key, step, attn):
+def visualize_attn_grids(args, config, key, step, attn_weights):
 
-    fig, axes = plt.subplots(1, config.n_head, figsize=(config.n_head * 5, 5))
-    for j, ax in enumerate(axes):
-        ax.grid(False)
-        ax.imshow(attn[j])
-        ax.set_title(f"attention head {j + 1}")
-    plt.tight_layout()
+    for i, attn in enumerate(attn_weights):
 
-    os.makedirs(os.path.join(args.results, 'attn_grid_vis', str(key)), exist_ok=True)
-    fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key), f'{step}.pdf'))
-    plt.close(fig)
+        fig, axes = plt.subplots(1, config.n_head, figsize=(config.n_head * 5, 5))
+        for j, ax in enumerate(axes):
+            ax.grid(False)
+            ax.imshow(attn[j])
+            ax.set_title(f"attention head {j + 1}")
+        plt.tight_layout()
+
+        os.makedirs(os.path.join(args.results, 'attn_grid_vis', str(key)), exist_ok=True)
+        fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key), f'step_{step}_sample_{i}.pdf'))
+        plt.close(fig)
 
 def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_attn_weights=False):
     model.eval()
