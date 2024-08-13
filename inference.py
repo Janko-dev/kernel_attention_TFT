@@ -80,11 +80,11 @@ def visualize_attn_grids(args, config, key, step, attn_weights):
             ax.set_title(f"attention head {j + 1}")
         plt.tight_layout()
 
-        os.makedirs(os.path.join(args.results, 'attn_grid_vis', str(key)), exist_ok=True)
-        fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key), f'step_{step}_sample_{i}.pdf'))
+        os.makedirs(os.path.join(args.results, 'attn_grid_vis', str(key[i, 0].item())), exist_ok=True)
+        fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key[i, 0].item()), f'step_{step}_sample_{i}.pdf'))
         plt.close(fig)
 
-def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_attn_weights=False):
+def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_n_attn_weights=-1):
     model.eval()
     predictions = []
     targets = []
@@ -97,6 +97,7 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
     future_vsn_weights = []
     static_vsn_weights = []
 
+    attn_grid_counter = 0
     with torch.jit.fuser("fuser2"):
         for step, batch in enumerate(data_loader):
             perf_meter.reset_current_lap()
@@ -106,8 +107,11 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
                 targets.append(batch['target'])
                 predictions.append(model(batch).float())
 
-                if visualize_attn_weights:
+                if visualize_n_attn_weights == -1:
                     visualize_attn_grids(args, config, ids[-1], step, model.attention_weights.float().cpu())
+                elif visualize_n_attn_weights > 0 and attn_grid_counter <= visualize_n_attn_weights:
+                    visualize_attn_grids(args, config, ids[-1], step, model.attention_weights.float().cpu())
+                    attn_grid_counter += 1
 
                 if return_attn_vsn_weights:
                     attention_weights.append(model.attention_weights[:, :, -1].float().cpu())
@@ -152,7 +156,7 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
      attention_weights, historical_vsn_weights, future_vsn_weights, static_vsn_weights) = predict(args, config, model, data_loader, scalers, cat_encodings,
                                                                                                   extend_targets=True,
                                                                                                   return_attn_vsn_weights=True,
-                                                                                                  visualize_attn_weights=True)
+                                                                                                  visualize_n_attn_weights=args.visualize)
 
     unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
     attention_weights = torch.Tensor(attention_weights)
