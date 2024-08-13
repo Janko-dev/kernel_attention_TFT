@@ -92,10 +92,10 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
                 predictions.append(model(batch).float())
 
                 if return_attn_vsn_weights:
-                    attention_weights.append(model.attention_weights.float())
-                    historical_vsn_weights.append(model.historical_vsn_weights.float())
-                    future_vsn_weights.append(model.future_vsn_weights.float())
-                    static_vsn_weights.append(model.static_vsn_weights.float())
+                    attention_weights.append(model.attention_weights[:, :, -1].float().cpu())
+                    # historical_vsn_weights.append(model.historical_vsn_weights.float())
+                    # future_vsn_weights.append(model.future_vsn_weights.float())
+                    # static_vsn_weights.append(model.static_vsn_weights.float())
 
             perf_meter.update(args.batch_size * n_workers,
                 exclude_from_total=step in [0, 1, 2, len(data_loader)-1])
@@ -159,13 +159,27 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
             df = pd.DataFrame(ex[:, [0, 2]],
                     index=range(num_horizons - ex.shape[0], num_horizons),
                     columns=['Target', 'P50 prediction'])
-            fig = df.plot().get_figure()
-            ax = fig.get_axes()[0]
+
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+
+            df.plot(ax=ax1)
             _values = ex[config.encoder_length-1:, [1, 3]]
-            ax.fill_between(range(num_horizons), _values[:,0], _values[:,1], alpha=0.2, color='green')
+            ax1.fill_between(range(num_horizons), _values[:,0], _values[:,1], alpha=0.2, color='green')
+
+            for j in range(config.n_head):
+                ax2.plot(attn[j], label=f"Attention head {j + 1}")
+            ax2.axvline(range(config.encoder_length), linestyle='--', color='k')
+            ax2.legend()
+
+            ax1.set_title("Quantile Prediction horizon")
+            ax2.set_title(f"Attention weights for horizon: $0: t_0+{num_horizons}$")
+
+            plt.tight_layout()
+
             os.makedirs(os.path.join(args.results, 'single_example_vis', str(key)), exist_ok=True)
             fig.savefig(os.path.join(args.results, 'single_example_vis', str(key), f'{i}.pdf'))
             plt.close(fig)
+
 def inference(args, config, model, data_loader, scalers, cat_encodings):
     unscaled_predictions, unscaled_targets, ids, perf_meter = predict(args, config, model, data_loader, scalers, cat_encodings)
     unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
