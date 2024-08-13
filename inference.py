@@ -69,14 +69,19 @@ def _unscale(config, values, scaler):
     flat_values = flat_values[[col for col in flat_values if not 'id' in col]]
     return flat_values.values
 
-def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False):
+def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False):
     model.eval()
     predictions = []
     targets = []
     ids = []
     perf_meter = PerformanceMeter(benchmark_mode=not args.disable_benchmark)
     n_workers = args.distributed_world_size if hasattr(args, 'distributed_world_size') else 1
-    
+
+    attention_weights = []
+    historical_vsn_weights = []
+    future_vsn_weights = []
+    static_vsn_weights = []
+
     with torch.jit.fuser("fuser2"):
         for step, batch in enumerate(data_loader):
             perf_meter.reset_current_lap()
@@ -85,6 +90,12 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
                 ids.append(batch['id'][:,0,:])
                 targets.append(batch['target'])
                 predictions.append(model(batch).float())
+
+                if return_attn_vsn_weights:
+                    attention_weights.append(model.attention_weights.float())
+                    historical_vsn_weights.append(model.historical_vsn_weights.float())
+                    future_vsn_weights.append(model.future_vsn_weights.float())
+                    static_vsn_weights.append(model.static_vsn_weights.float())
 
             perf_meter.update(args.batch_size * n_workers,
                 exclude_from_total=step in [0, 1, 2, len(data_loader)-1])
@@ -108,12 +119,26 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
                 axis=-1)
         unscaled_targets = np.expand_dims(_unscale(config, targets[:,:,0], scalers['']), axis=-1)
 
-    return unscaled_predictions, unscaled_targets, ids, perf_meter
+    if return_attn_vsn_weights:
+        attention_weights = torch.cat(attention_weights, dim=0).cpu().numpy()
+        historical_vsn_weights = torch.cat(historical_vsn_weights, dim=0).cpu().numpy()
+        future_vsn_weights = torch.cat(future_vsn_weights, dim=0).cpu().numpy()
+        static_vsn_weights = torch.cat(static_vsn_weights, dim=0).cpu().numpy()
+        return (unscaled_predictions, unscaled_targets, ids, perf_meter,
+                attention_weights, historical_vsn_weights, future_vsn_weights, static_vsn_weights)
+    else:
+        return unscaled_predictions, unscaled_targets, ids, perf_meter
 
 def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
-    unscaled_predictions, unscaled_targets, ids, _ = predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=True)
+    (unscaled_predictions, unscaled_targets, ids, _,
+     attention_weights, historical_vsn_weights, future_vsn_weights, static_vsn_weights) = predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=True, return_attn_vsn_weights=True)
 
     unscaled_predictions, unscaled_targets, ids = torch.Tensor(unscaled_predictions), torch.Tensor(unscaled_targets), torch.Tensor(ids)
+    attention_weights = torch.Tensor(attention_weights)
+    historical_vsn_weights = torch.Tensor(historical_vsn_weights)
+    future_vsn_weights = torch.Tensor(future_vsn_weights)
+    static_vsn_weights = torch.Tensor(static_vsn_weights)
+
     num_horizons = config.example_length - config.encoder_length + 1
     pad = unscaled_predictions.new_full((unscaled_targets.shape[0], unscaled_targets.shape[1] - unscaled_predictions.shape[1], unscaled_predictions.shape[2]), fill_value=float('nan'))
     pad[:,-1,:] = unscaled_targets[:,-num_horizons,:]
@@ -122,10 +147,15 @@ def visualize_v2(args, config, model, data_loader, scalers, cat_encodings):
     ids = ids.squeeze()
     joint_graphs = torch.cat([unscaled_targets, unscaled_predictions], dim=2)
     graphs = {i:joint_graphs[ids == i, :, :] for i in set(ids.tolist())}
+
+    attn_graphs = {i: attention_weights[ids == i, :, :] for i in set(ids.tolist())}
+
     n_samples = None if args.visualize == -1 else args.visualize
     for key, g in graphs.items():
-        for i, ex in enumerate(g[:n_samples]):
+        for i, (ex, attn) in enumerate(zip(g[:n_samples], attn_graphs[key][:n_samples])):
             ex = ex.numpy()
+            attn = attn.numpy()
+            print(attn.shape)
             df = pd.DataFrame(ex[:, [0, 2]],
                     index=range(num_horizons - ex.shape[0], num_horizons),
                     columns=['Target', 'P50 prediction'])
