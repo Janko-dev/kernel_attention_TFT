@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-: ${EXP_NAME:=traffic}
-: ${EXP:=gridsearch_traffic_cp_bs64_lr1e-3_seed1/}
+: ${EXP_NAME:=electricity}
+: ${EXP:=gridsearch_electricity_sdp_bs64_lr1e-3_seed1/}
 
 : ${CKECKPOINT_PATH:=/storage/results/${EXP}/best_model_checkpoint.pt}
 : ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
