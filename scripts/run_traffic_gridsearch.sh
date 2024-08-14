@@ -28,7 +28,7 @@ ATTN_NAMES=(sdp lin exp per lp rq imp cp)
 for ATTN_NAME in ${ATTN_NAMES[@]}
 do
 
-  : ${EXP_RESULTS_PATH:=/storage/results/${EXP_NAME}/grid_search_${EXP_NAME}_${ATTN_NAME}}
+  EXP_RESULTS_PATH=/storage/results/${EXP_NAME}/grid_search_${EXP_NAME}_${ATTN_NAME}
 
   python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search.py \
           --dataset ${EXP_NAME} \
