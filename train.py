@@ -21,47 +21,25 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.distributed as dist
-from torch.utils.data import DataLoader, DistributedSampler, RandomSampler
-from apex.optimizers import FusedAdam
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.cuda import amp
+from torch.utils.data import DataLoader
 
 import numpy as np
 
 import dllogger
 
-from modeling import TemporalFusionTransformer
+from basic_transformer import QuantileTransformer, QuantileConvDecoderOnlyTransformer
 from configuration import CONFIGS, get_attention_names, get_attention_hparam_grid, make_attn_module_class
-from data_utils import load_dataset
+from synthetic_datasets import SineSyntheticDataset
 from log_helper import setup_logger
 from criterions import QuantileLoss
-from inference import predict
-from utils import PerformanceMeter, print_once
-import gpu_affinity
-from ema import ModelEma
+
+def get_config():
+
+
+
 
 
 def main(args):
-    ### INIT DISTRIBUTED
-    args.distributed_world_size = int(os.environ.get('WORLD_SIZE', 1))
-    args.local_rank = int(os.environ.get('LOCAL_RANK', 0))
-    if args.distributed_world_size > 1:
-        dist.init_process_group(backend='nccl', init_method='env://')
-        print_once(f'Distributed training with {args.distributed_world_size} GPUs')
-        args.distributed_rank = dist.get_rank()
-        torch.cuda.set_device(args.local_rank)
-        torch.cuda.synchronize()
-
-    # Enable CuDNN autotuner
-    nproc_per_node = torch.cuda.device_count()
-    if args.affinity != 'disabled':
-        affinity = gpu_affinity.set_affinity(
-                args.local_rank,
-                nproc_per_node,
-                args.affinity
-            )
-        print(f'{args.local_rank}: thread affinity: {affinity}')
 
     torch.backends.cudnn.benchmark = True
 
@@ -72,9 +50,9 @@ def main(args):
 
     setup_logger(args)
 
-    config = CONFIGS[args.dataset]()
-    if args.overwrite_config:
-        config.__dict__.update(json.loads(args.overwrite_config))
+    # config = CONFIGS[args.dataset]()
+    # if args.overwrite_config:
+    #     config.__dict__.update(json.loads(args.overwrite_config))
 
     dllogger.log(step='HPARAMS', data={**vars(args), **vars(config)}, verbosity=1)
 
@@ -251,7 +229,6 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--use_amp', action='store_true', help='Enable automatic mixed precision')
     parser.add_argument('--clip_grad', type=float, default=0.0)
-    parser.add_argument('--grad_accumulation', type=int, default=0)
     parser.add_argument('--early_stopping', type=int, default=1000,
                         help='Stop training if validation loss does not improve for more than this number of epochs.')
     parser.add_argument('--results', type=str, default='/results',
@@ -260,15 +237,6 @@ if __name__ == '__main__':
                         help='Name of dllogger output file')
     parser.add_argument('--overwrite_config', type=str, default='',
                        help='JSON string used to overload config')
-    parser.add_argument('--affinity', type=str,
-                         default='socket_unique_interleaved',
-                         choices=['socket', 'single', 'single_unique',
-                                  'socket_unique_interleaved',
-                                  'socket_unique_continuous',
-                                  'disabled'],
-                         help='type of CPU affinity')
-    parser.add_argument("--ema_decay", type=float, default=0.0, help='Use exponential moving average')
-    parser.add_argument("--disable_benchmark", action='store_true', help='Disable benchmarking mode')
 
     ARGS = parser.parse_args()
     main(ARGS)

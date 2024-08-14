@@ -93,6 +93,8 @@ def main(args):
     is_nan = False
     for attn_hparams in attn_hparam_grid:
 
+        torch.cuda.empty_cache()
+
         attn_hparams['dropout_rate'] = config.attn_dropout
         if args.attn_name == 'imp':
             attn_hparams['input_size'] = config.hidden_size // config.n_head
