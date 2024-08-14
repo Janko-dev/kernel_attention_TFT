@@ -20,7 +20,7 @@
 : ${MAX_GRAD_NORM:=100}
 : ${PATIENCE:=5}
 
-: ${ATTN_NAME:=sdp}
+: ${ATTN_NAME:=exp}
 : ${EXP_NAME:=traffic}
 : ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
 : ${EXP_RESULTS_PATH:=/storage/results/${EXP_NAME}_individual_exp/grid_search_${EXP_NAME}_${ATTN_NAME}}

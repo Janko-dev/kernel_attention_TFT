@@ -96,6 +96,11 @@ def main(args):
         attn_hparams['dropout_rate'] = config.attn_dropout
         if args.attn_name == 'imp':
             attn_hparams['input_size'] = config.hidden_size // config.n_head
+
+        with open(progress_path, 'w') as f:
+            progress_feed.append(attn_hparams)
+            json.dump(progress_feed, f)
+
         attn_module = attn_module_class(**attn_hparams)
         model = TemporalFusionTransformer(config, attn_module).cuda()
         if args.ema_decay:
@@ -185,10 +190,6 @@ def main(args):
             state_dict = model.module.state_dict() if isinstance(model, (DDP, ModelEma)) else model.state_dict()
             ckpt = {'args': args, 'config': config, 'model': state_dict, 'attn_hparams': attn_hparams}
             torch.save(ckpt, os.path.join(args.results, 'best_model_checkpoint.pt'))
-
-        with open(progress_path, 'w') as f:
-            progress_feed.append({'args': args, 'config': config, 'attn_hparams': attn_hparams})
-            json.dump(progress_feed, f)
 
     ### TEST PHASE ###
     state_dict = torch.load(os.path.join(args.results, 'best_model_checkpoint.pt'), map_location='cpu')

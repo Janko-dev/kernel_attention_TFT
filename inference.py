@@ -84,7 +84,7 @@ def visualize_attn_grids(args, config, key, step, attn_weights):
         fig.savefig(os.path.join(args.results, 'attn_grid_vis', str(key[i, 0].item()), f'step_{step}_sample_{i}.pdf'))
         plt.close(fig)
 
-def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_n_attn_weights=-1):
+def predict(args, config, model, data_loader, scalers, cat_encodings, extend_targets=False, return_attn_vsn_weights=False, visualize_n_attn_weights=0):
     model.eval()
     predictions = []
     targets = []
@@ -103,9 +103,9 @@ def predict(args, config, model, data_loader, scalers, cat_encodings, extend_tar
             perf_meter.reset_current_lap()
             with torch.no_grad():
                 batch = {key: tensor.cuda() if tensor.numel() else None for key, tensor in batch.items()}
-                ids.append(batch['id'][:,0,:])
-                targets.append(batch['target'])
-                predictions.append(model(batch).float())
+                ids.append(batch['id'][:,0,:].cpu())
+                targets.append(batch['target'].cpu())
+                predictions.append(model(batch).float().cpu())
 
                 if visualize_n_attn_weights == -1:
                     visualize_attn_grids(args, config, ids[-1], step, model.attention_weights.float().cpu())
