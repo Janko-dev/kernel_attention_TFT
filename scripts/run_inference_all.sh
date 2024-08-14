@@ -21,9 +21,9 @@ ATTN_NAMES=(sdp lin exp per lp rq imp cp)
 for ATTN_NAME in ${ATTN_NAMES[@]}
 do
 
-  : ${EXP:=gridsearch_${EXP_NAME}_${ATTN_NAME}_bs64_lr1e-3_seed1/}
-  : ${CKECKPOINT_PATH:=/storage/results/${EXP}/best_model_checkpoint.pt}
-  : ${EXP_RESULTS_PATH:=/storage/inference/${EXP_NAME}/inference_results_${ATTN_NAME}}
+  EXP=gridsearch_${EXP_NAME}_${ATTN_NAME}}
+  CKECKPOINT_PATH=/storage/results/${EXP}/best_model_checkpoint.pt
+  EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_results_${ATTN_NAME}
 
   python inference.py \
       --checkpoint ${CKECKPOINT_PATH} \

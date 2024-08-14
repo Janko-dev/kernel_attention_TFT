@@ -258,7 +258,7 @@ bash scripts/get_data.sh
 5. Start training. Choose one of the scripts provided in the `scripts/` directory. Results are stored in the `/results` directory.
 These scripts are tuned for DGX1-32G. If you have a different system, use NGPU and BATCH_SIZE variables to adjust the parameters for your system.
 ```bash
-bash scripts/run_grid_search_electricity.sh
+bash scripts/run_electricity_gridsearch.sh
 ```
 
 inference

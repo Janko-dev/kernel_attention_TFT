@@ -23,6 +23,7 @@
 : ${EXP_NAME:=traffic}
 
 #ATTN_NAMES=(sdp lin exp per lp rq imp cp)
+EXP_RESULTS_PATH=/storage/results/${EXP_NAME}/comb_grid_search_${EXP_NAME}_${ATTN_NAME}
 
 python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search_combined.py \
           --dataset ${EXP_NAME} \
@@ -36,4 +37,4 @@ python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search_combined.py
           --use_amp \
           --clip_grad ${MAX_GRAD_NORM} \
           --early_stopping ${PATIENCE} \
-          --results /storage/results/comb_gridsearch_${EXP_NAME}_bs${BATCH_SIZE}_lr${LR}_seed${SEED}
+          --results ${EXP_RESULTS_PATH}
