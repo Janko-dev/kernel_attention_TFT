@@ -86,6 +86,11 @@ def main(args):
 
     criterion = QuantileLoss(config).cuda()
 
+    progress_path = os.path.join(args.results, f'progress_{args.dataset}_{args.attn_name}.json')
+    progress_feed = []
+    with open(progress_path, 'w') as f:
+        json.dump(progress_feed, f)
+
     best_val_loss = float('inf')
     is_nan = False
     for attn_hparams in attn_hparam_grids:
@@ -98,6 +103,10 @@ def main(args):
                 attn_hparams[name]['input_size'] = config.hidden_size
 
             attention_modules.append(attn_module_classes[name](**attn_hparams[name]))
+
+        with open(progress_path, 'w') as f:
+            progress_feed.append(attn_hparams)
+            json.dump(progress_feed, f)
 
         model = AltTemporalFusionTransformer(config, attention_modules).cuda()
         if args.ema_decay:

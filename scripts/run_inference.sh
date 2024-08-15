@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-: ${EXP_NAME:=electricity}
-: ${EXP:=gridsearch_electricity_sdp_bs64_lr1e-3_seed1/}
+EXP_NAME:=electricity
+EXP:=grid_search_${EXP_NAME}_sdp
 
-: ${CKECKPOINT_PATH:=/storage/results/${EXP}/best_model_checkpoint.pt}
-: ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
+EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin
+CKECKPOINT_PATH:=/storage/results/${EXP_NAME}/${EXP}/best_model_checkpoint.pt
+EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_${EXP}
 
 python inference.py \
     --checkpoint ${CKECKPOINT_PATH} \
@@ -27,4 +28,4 @@ python inference.py \
     --visualize 2 \
     --save_predictions \
     --joint_visualization \
-    --results /storage/inference_results_sdp/
+    --results ${EXP_RESULTS_PATH}

@@ -14,16 +14,15 @@
 
 ATTN_NAMES=(sdp lin exp per lp rq imp cp)
 
-: ${EXP_NAME:=electricity}
-: ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
-
+EXP_NAME:=electricity
+EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin
 
 for ATTN_NAME in ${ATTN_NAMES[@]}
 do
 
-  EXP=gridsearch_${EXP_NAME}_${ATTN_NAME}}
-  CKECKPOINT_PATH=/storage/results/${EXP}/best_model_checkpoint.pt
-  EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_results_${ATTN_NAME}
+  EXP=gridsearch_${EXP_NAME}_${ATTN_NAME}
+  CKECKPOINT_PATH=/storage/results/${EXP_NAME}/${EXP}/best_model_checkpoint.pt
+  EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_${EXP}
 
   python inference.py \
       --checkpoint ${CKECKPOINT_PATH} \
