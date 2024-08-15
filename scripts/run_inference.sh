@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-EXP_NAME:=electricity
-EXP:=grid_search_${EXP_NAME}_sdp
-
-EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin
-CKECKPOINT_PATH:=/storage/results/${EXP_NAME}/${EXP}/best_model_checkpoint.pt
-EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_${EXP}
+: ${EXP_NAME:=electricity}
+: ${EXP:=grid_search_${EXP_NAME}_sdp}
+: ${EXP_DATA_PATH:=/storage/data/processed/${EXP_NAME}_bin}
+: ${CKECKPOINT_PATH:=/storage/results/${EXP_NAME}/${EXP}/best_model_checkpoint.pt}
+: ${EXP_RESULTS_PATH=/storage/inference/${EXP_NAME}/inference_${EXP}}
 
 python inference.py \
     --checkpoint ${CKECKPOINT_PATH} \
