@@ -86,7 +86,7 @@ def main(args):
 
     criterion = QuantileLoss(config).cuda()
 
-    progress_path = os.path.join(args.results, f'progress_{args.dataset}_{args.attn_name}.json')
+    progress_path = os.path.join(args.results, f'progress_{args.dataset}_{"_".join(args.attn_names)}.json')
     progress_feed = []
     with open(progress_path, 'w') as f:
         json.dump(progress_feed, f)

@@ -23,7 +23,7 @@
 : ${EXP_NAME:=traffic}
 
 #ATTN_NAMES=(sdp lin exp per lp rq imp cp)
-EXP_RESULTS_PATH=/storage/results/${EXP_NAME}/comb_grid_search_${EXP_NAME}_${ATTN_NAME}
+EXP_RESULTS_PATH=/storage/results/${EXP_NAME}/comb_grid_search_${EXP_NAME}
 
 python -m torch.distributed.run --nproc_per_node=${NGPU} grid_search_combined.py \
           --dataset ${EXP_NAME} \
