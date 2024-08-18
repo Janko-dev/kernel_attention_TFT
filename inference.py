@@ -76,7 +76,8 @@ def visualize_attn_grids(args, config, key, step, attn_weights):
         fig, axes = plt.subplots(1, config.n_head, figsize=(config.n_head * 5, 5))
         for j, ax in enumerate(axes):
             ax.grid(False)
-            ax.imshow(attn[j])
+            t = torch.arange(attn.shape[1]).reshape(-1, 1)
+            ax.imshow(attn[j] * t)
             ax.set_title(f"attention head {j + 1}")
         plt.tight_layout()
 
