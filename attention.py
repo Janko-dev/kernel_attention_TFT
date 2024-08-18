@@ -248,7 +248,7 @@ class RationalQuadraticKernelAttention(nn.Module):
 """
 Implicit Kernel attention
 this is an approximation of a continuous stationary kernel with monte carlo integration 
-and R sampled spectral points, $w_r$, and Fourier feature map, $\phi_r$.
+and R sampled spectral points, $w_r$, and Fourier feature map, $\\phi_r$.
 params:
     - R_features: dimensionality of the Fourier feature map
     - p_norm: controls the L^p norm (magnitude) of query and keys
