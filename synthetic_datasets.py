@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data import Dataset
-from typing import Literal
 
 
 class BaseTimeSeriesDataset(Dataset):
@@ -35,9 +34,6 @@ class BaseTimeSeriesDataset(Dataset):
 
     def __len__(self):
         return len(self.X) - self.seq_len - self.shift
-
-import torch
-from typing import Literal
 
 class StepSyntheticDataset(BaseTimeSeriesDataset):
     def __init__(
