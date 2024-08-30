@@ -285,7 +285,7 @@ def main(args):
         attn_module = attn_module_class(**attn_hparams)
         model = TemporalFusionTransformer(config, attn_module).cuda()
     else:
-        attn_module_classes = {name: make_attn_module_class(name) for name in args.attn_names}
+        attn_module_classes = {name: make_attn_module_class(name) for name in state_dict['args'].attn_names}
         attention_modules = [attn_module_classes[name](**attn_hparams[name]) for name in state_dict['args'].attn_names]
         model = AltTemporalFusionTransformer(config, attention_modules).cuda()
 
